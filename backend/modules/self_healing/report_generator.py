@@ -13,8 +13,9 @@ A report is produced after **every** completion, regardless of execution path:
 * ``auto_fix``            — execute the runbook, verify, roll back + escalate on
   failure.
 * ``user_approved``       — same execution guarantees as auto-fix, reached only
-  once a human has authorised the action (the execute endpoint implies that
-  authorisation).
+  once a human has authorised the action. The remediation ``execute`` endpoint
+  enforces this: a ``user_approval_required`` remediation is refused (HTTP 409)
+  until its item in the global approval queue has been explicitly approved.
 * ``human_escalation``    — no fix is applied; instead a tracking ticket is
   opened and the owner / security teams are notified (Requirements 10.1, 10.2).
 

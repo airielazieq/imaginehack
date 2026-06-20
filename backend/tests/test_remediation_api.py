@@ -240,7 +240,12 @@ def client():
 
 @pytest.fixture(autouse=True)
 def _reset_between_tests(client):
+    # The approval queue is an in-memory singleton that survives /api/mock/reset,
+    # so clear it explicitly to isolate tests that exercise the approval gate.
+    from backend.modules.self_healing.approval_queue import approval_queue
+
     client.post("/api/mock/reset")
+    approval_queue.clear()
     yield
 
 
@@ -331,6 +336,14 @@ def test_auto_fix_end_to_end(client):
         assert row["workload_id"] == workload_id
         assert row["execution_status"] == "completed"
 
+        # The originating issue advanced into the remediation lifecycle:
+        # generating the auto-fix recommendation -> recommended; executing it
+        # -> auto_fixed (drives the workload Self-Healing tab).
+        from backend.services import issue_service
+
+        issue = issue_service.get_issue(result["issue_id"])
+        assert issue is not None and issue["status"] == "auto_fixed"
+
         # REMEDIATION_COMPLETED was emitted (drain the fire-and-forget task).
         for _ in range(10):
             if received:
@@ -340,6 +353,104 @@ def test_auto_fix_end_to_end(client):
         assert received[0].payload["remediation_id"] == rem_id
     finally:
         event_bus.unsubscribe(EventType.REMEDIATION_COMPLETED, _probe)
+
+
+def test_user_approval_gate_enqueue_block_and_release(client):
+    """A user_approval_required remediation must be approved before it can run.
+
+    Drives the full chain (trigger -> detect -> recommend) for a carbon-heavy
+    workload, which the safety router classifies as ``user_approval_required``,
+    and exercises every state of the guardrail fix:
+
+    - generating the recommendation auto-enqueues it for approval (pending);
+    - ``execute`` is refused with HTTP 409 while the item is pending;
+    - once approved, ``execute`` runs the approved path and completes;
+    - a freshly re-queued + denied copy can never be executed (HTTP 409).
+    """
+    from backend.modules.self_healing.approval_queue import approval_queue
+    from backend.schemas.recommendation import Recommendation
+    from backend.services import issue_service
+
+    trig = client.post("/api/mock/trigger/trigger_carbon_heavy_batch_job")
+    assert trig.status_code == 200, trig.text
+    workload_id = trig.json()["data"]["workload_id"]
+
+    recommendation = _wait_for_recommendation(client, workload_id)
+    assert recommendation is not None
+    rec_id = recommendation["recommendation_id"]
+    issue_id = recommendation["issue_id"]
+
+    # Evaluate confirms the safety path needs human sign-off.
+    ev = client.post(f"/api/remediation/evaluate/{rec_id}")
+    assert ev.status_code == 200, ev.text
+    assert ev.json()["data"]["execution_path"] == "user_approval_required"
+
+    # Generation auto-enqueued the recommendation, still pending, and moved the
+    # issue into pending_approval.
+    item = approval_queue.get(rec_id)
+    assert item is not None, "recommendation should be queued for approval"
+    assert item.status == "pending"
+    assert issue_service.get_issue(issue_id)["status"] == "pending_approval"
+
+    # Execute is refused while approval is still pending.
+    pending = client.post(f"/api/remediation/execute/{rec_id}")
+    assert pending.status_code == 409, pending.text
+
+    # Approve -> issue becomes approved; execute is now allowed and runs the
+    # approved path, leaving the issue remediated.
+    ok = client.post(f"/api/approvals/{rec_id}/approve")
+    assert ok.status_code == 200, ok.text
+    assert issue_service.get_issue(issue_id)["status"] == "approved"
+    ex = client.post(f"/api/remediation/execute/{rec_id}")
+    assert ex.status_code == 200, ex.text
+    result = ex.json()["data"]
+    assert result["execution_path"] == "user_approved"
+    assert result["recommendation_id"] == rec_id
+    assert issue_service.get_issue(issue_id)["status"] == "remediated"
+
+    # A denied item can never be executed: re-queue a fresh copy and deny it.
+    model = Recommendation(**recommendation_service.get_recommendation(rec_id))
+    approval_queue.clear()
+    approval_queue.add(model)
+    deny = client.post(f"/api/approvals/{rec_id}/deny")
+    assert deny.status_code == 200, deny.text
+    blocked = client.post(f"/api/remediation/execute/{rec_id}")
+    assert blocked.status_code == 409, blocked.text
+
+
+def test_generate_is_idempotent_no_duplicate_approvals(client):
+    """Repeated generate calls (revisiting the issue) must not duplicate.
+
+    The IssueDetail page calls POST /recommendations/generate every time it loads
+    and on each "Review in approval queue" click. This must return the same
+    recommendation and leave a single approval-queue entry — not a new one each
+    time.
+    """
+    from backend.modules.self_healing.approval_queue import approval_queue
+
+    trig = client.post("/api/mock/trigger/trigger_carbon_heavy_batch_job")
+    assert trig.status_code == 200, trig.text
+    workload_id = trig.json()["data"]["workload_id"]
+
+    rec = _wait_for_recommendation(client, workload_id)
+    assert rec is not None
+    issue_id = rec["issue_id"]
+    original_id = rec["recommendation_id"]
+
+    # Simulate clicking "Review in approval queue" several times.
+    for _ in range(4):
+        r = client.post(f"/api/recommendations/generate/{issue_id}")
+        assert r.status_code == 200, r.text
+        assert r.json()["data"]["recommendation_id"] == original_id
+
+    # The dedup invariant, scoped to THIS issue so leftover state from other
+    # tests can't perturb the counts: exactly one recommendation exists for the
+    # issue (the bug created a fresh one per click), and at most one queue entry
+    # references it. Without the fix, the four clicks would balloon both.
+    recs = recommendation_service.list_recommendations(issue_id=issue_id)
+    assert len(recs) == 1, f"expected 1 recommendation for issue, got {len(recs)}"
+    items = [i for i in approval_queue.list_items() if i.issue_id == issue_id]
+    assert len(items) <= 1, f"expected <=1 queue item for issue, got {len(items)}"
 
 
 def test_escalation_end_to_end(client):
@@ -370,6 +481,11 @@ def test_escalation_end_to_end(client):
     rep = client.get(f"/api/remediation/{result['remediation_id']}/report")
     assert rep.status_code == 200, rep.text
     assert rep.json()["data"]["execution_path"] == "human_escalation"
+
+    # The originating issue is now marked escalated (drives the Self-Healing tab).
+    from backend.services import issue_service
+
+    assert issue_service.get_issue(result["issue_id"])["status"] == "escalated"
 
 
 def teardown_module(module):  # noqa: D401 - pytest hook

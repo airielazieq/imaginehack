@@ -37,6 +37,7 @@ from backend.modules.next_best_action.optimization_impact import (
     compute_optimization_impact,
 )
 from backend.modules.next_best_action.xgboost_forecast import forecast_snapshot
+from backend.modules.self_healing.approval_queue import approval_queue
 from backend.schemas.recommendation import Recommendation
 from backend.schemas.telemetry import TelemetrySnapshot
 from backend.schemas.workload import Workload
@@ -167,6 +168,70 @@ async def _emit_recommendation_generated(
     await event_bus.publish(event)
 
 
+def _queue_for_approval(
+    recommendation: Recommendation,
+    *,
+    workload: Workload | None = None,
+    db_path: str | None = None,
+) -> None:
+    """Add a recommendation that needs sign-off to the global approval queue.
+
+    Recommendations whose ``required_execution_mode`` is
+    ``user_approval_required`` must be approved by a human before the
+    remediation ``execute`` endpoint will run them. Enqueueing here is what makes
+    that gate real: without an item in the queue there is nothing for an operator
+    to approve and nothing for the executor to check against. Best-effort — a
+    queueing failure must never block recommendation generation.
+    """
+    if recommendation.required_execution_mode != "user_approval_required":
+        return
+    # Don't re-add (and thereby reset to "pending") an item that is already in
+    # the queue — that would clobber an in-flight approve/deny/snooze decision.
+    if approval_queue.get(recommendation.recommendation_id) is not None:
+        return
+    try:
+        environment = workload.environment if workload is not None else None
+        if environment is None:
+            raw = workload_service.get_workload(
+                recommendation.workload_id, db_path=db_path
+            )
+            environment = (raw or {}).get("environment")
+        approval_queue.add(recommendation, environment=environment)
+    except Exception:  # noqa: BLE001 - queueing must never break generation
+        logger.exception(
+            "Failed to queue recommendation %s for approval",
+            recommendation.recommendation_id,
+        )
+
+
+def _advance_issue_status(
+    recommendation: Recommendation, *, db_path: str | None = None
+) -> None:
+    """Move the originating issue into the remediation lifecycle.
+
+    Once a recommendation exists, the issue is no longer just ``new``: it is
+    ``pending_approval`` when the action needs human sign-off, otherwise
+    ``recommended``. This write-back is what lets the UI (workload Self-Healing
+    tab, issue status badges) reflect that an action is in flight. Best-effort —
+    a status update must never break recommendation generation.
+    """
+    new_status = (
+        "pending_approval"
+        if recommendation.required_execution_mode == "user_approval_required"
+        else "recommended"
+    )
+    try:
+        issue_service.update_status(
+            recommendation.issue_id, new_status, db_path=db_path
+        )
+    except Exception:  # noqa: BLE001 - status write-back is best-effort
+        logger.exception(
+            "Failed to advance issue %s to %s",
+            recommendation.issue_id,
+            new_status,
+        )
+
+
 async def generate_and_store(
     issue: Any,
     *,
@@ -186,6 +251,8 @@ async def generate_and_store(
     if recommendation is None:
         return None
     recommendation_service.create_recommendation(recommendation, db_path=db_path)
+    _queue_for_approval(recommendation, workload=workload, db_path=db_path)
+    _advance_issue_status(recommendation, db_path=db_path)
     await _emit_recommendation_generated(recommendation, correlation_id=correlation_id)
     return recommendation
 
@@ -203,6 +270,22 @@ async def generate_for_issue_id(
     raw_issue = issue_service.get_issue(issue_id, db_path=db_path)
     if raw_issue is None:
         return None
+
+    # Idempotency: if a recommendation already exists for this issue, return it
+    # instead of generating a duplicate. The IssueDetail page calls this endpoint
+    # every time it loads (and on each "Review in approval queue" click); without
+    # this guard each visit would persist a new recommendation id and enqueue a
+    # duplicate approval item. Mirrors the event-driven path's idempotency check.
+    existing = recommendation_service.get_latest_for_issue(issue_id, db_path=db_path)
+    if existing is not None:
+        try:
+            return Recommendation(**existing)
+        except Exception:  # noqa: BLE001 - tolerate schema drift on stored docs
+            logger.warning(
+                "Stored recommendation for issue %s did not validate; regenerating",
+                issue_id,
+            )
+
     issue = _parse_issue(raw_issue)
     return await generate_and_store(issue, db_path=db_path)
 

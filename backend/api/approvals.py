@@ -26,10 +26,31 @@ from backend.modules.self_healing.approval_queue import (
     approval_queue,
 )
 from backend.schemas.api_responses import success
+from backend.services import issue_service
 
 logger = logging.getLogger("clover.api.approvals")
 
 router = APIRouter(tags=["approvals"])
+
+
+def _sync_issue_status(item, new_status: str) -> None:
+    """Reflect an approval decision on the originating issue (best-effort).
+
+    Approving moves the issue to ``approved``; denying moves it to ``rejected``.
+    This keeps the issue's status — which the UI's Self-Healing tab and status
+    badges read — in step with the approval queue. A failure here must never
+    fail the approve/deny request.
+    """
+    if item is None:
+        return
+    try:
+        issue_service.update_status(item.issue_id, new_status)
+    except Exception:  # noqa: BLE001 - status write-back is best-effort
+        logger.exception(
+            "Failed to sync issue %s to %s after approval decision",
+            item.issue_id,
+            new_status,
+        )
 
 
 @router.get("/api/approvals", status_code=status.HTTP_200_OK)
@@ -68,6 +89,7 @@ async def approve_approval(
         item = approval_queue.approve(approval_id, selected_mcp_tools=selected)
     except InvalidTransition as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    _sync_issue_status(item, "approved")
     return success(data=item.to_dict(), message="Recommendation approved.")
 
 
@@ -83,6 +105,7 @@ async def deny_approval(approval_id: str) -> dict:
         item = approval_queue.deny(approval_id)
     except InvalidTransition as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    _sync_issue_status(item, "rejected")
     return success(data=item.to_dict(), message="Recommendation denied.")
 
 

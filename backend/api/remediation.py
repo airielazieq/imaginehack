@@ -25,6 +25,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from backend.core.event_bus import Event, EventType, event_bus
 from backend.modules.self_healing import report_generator
+from backend.modules.self_healing.approval_queue import approval_queue
 from backend.schemas.api_responses import success
 from backend.services import (
     issue_service,
@@ -47,6 +48,69 @@ def _load_recommendation(recommendation_id: str) -> dict:
             detail=f"Recommendation '{recommendation_id}' not found.",
         )
     return recommendation
+
+
+def _require_human_approval(recommendation_id: str) -> None:
+    """Enforce the human-in-the-loop gate for a ``user_approval_required`` fix.
+
+    The deterministic safety router has classified this remediation as requiring
+    explicit human sign-off, so it must not run until an operator has approved it
+    in the global approval queue. We refuse with HTTP 409 unless the queued item
+    exists and is in the ``approved`` state:
+
+    - missing item  -> not yet surfaced/approved (the recommendation must be
+      generated, which enqueues it) -> refuse;
+    - pending / snoozed -> awaiting a decision -> refuse;
+    - denied -> an operator rejected it -> refuse;
+    - escalated -> the countdown lapsed; a human must handle it out-of-band ->
+      refuse auto-execution.
+
+    Without this gate, calling ``execute`` would silently auto-apply a change the
+    policy says needs approval, defeating the module's core guardrail.
+    """
+    item = approval_queue.get(recommendation_id)
+    status_label = item.status if item is not None else "not_queued"
+    if status_label == "approved":
+        return
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=(
+            f"Remediation requires human approval before it can run "
+            f"(approval status: '{status_label}'). Approve it via "
+            f"POST /api/approvals/{recommendation_id}/approve first."
+        ),
+    )
+
+
+def _advance_issue_status_for_result(result) -> None:
+    """Reflect a completed remediation on its originating issue (best-effort).
+
+    Maps the remediation outcome onto the issue's terminal lifecycle status so
+    the UI (workload Self-Healing tab, issue badges) shows what happened:
+
+    - escalation, or any failed/escalated run -> ``escalated``
+    - completed auto-fix                       -> ``auto_fixed``
+    - completed approved fix                   -> ``remediated``
+
+    A failure here must never fail the execute request.
+    """
+    if result.execution_path == "human_escalation" or result.execution_status in (
+        "escalated",
+        "failed",
+    ):
+        new_status = "escalated"
+    elif result.execution_status == "completed":
+        new_status = "auto_fixed" if result.execution_path == "auto_fix" else "remediated"
+    else:
+        return
+    try:
+        issue_service.update_status(result.issue_id, new_status)
+    except Exception:  # noqa: BLE001 - status write-back is best-effort
+        logger.exception(
+            "Failed to advance issue %s to %s after remediation",
+            result.issue_id,
+            new_status,
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -99,8 +163,17 @@ async def execute_remediation(recommendation_id: str) -> dict:
     workload = workload_service.get_workload(recommendation["workload_id"])
     issue = issue_service.get_issue(recommendation["issue_id"])
 
-    result = report_generator.generate_report(recommendation, workload, issue)
+    # Decide the safe path up front so we can enforce the approval guardrail
+    # *before* anything executes, then reuse the same decision for the report.
+    decision = report_generator.evaluate(recommendation, workload, issue)
+    if decision.execution_path == "user_approval_required":
+        _require_human_approval(recommendation_id)
+
+    result = report_generator.generate_report(
+        recommendation, workload, issue, routing=decision
+    )
     remediation_service.create_remediation(result)
+    _advance_issue_status_for_result(result)
 
     await event_bus.publish(
         Event(
