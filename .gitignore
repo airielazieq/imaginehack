@@ -1,0 +1,54 @@
+# ──────────────────────────────────────────────────────────────
+# Clover — repository-wide ignores
+# Per-package ignores also live in backend/.gitignore and frontend/.gitignore
+# ──────────────────────────────────────────────────────────────
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.eggs/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Databases / runtime data ---
+*.db
+*.db-wal
+*.db-shm
+
+# --- Trained ML models ---
+ml/models/*.joblib
+backend/ml/models/*.joblib
+
+# --- Test / analysis caches ---
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Tooling / generated analysis output ---
+graphify-out/
+
+# --- Editor / OS ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Environment files (keep .env.example tracked) ---
+.env
+.env.*
+!.env.example

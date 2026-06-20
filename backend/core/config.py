@@ -38,7 +38,8 @@ class Settings:
         self.cors_origins: list[str] = self._parse_origins(
             os.getenv(
                 "CLOVER_CORS_ORIGINS",
-                "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+                "http://localhost:5174,http://localhost:5173,http://localhost:3000,"
+                "http://127.0.0.1:5174,http://127.0.0.1:5173",
             )
         )
         self.log_level: str = os.getenv("CLOVER_LOG_LEVEL", "INFO").upper()
