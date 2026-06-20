@@ -1,0 +1,162 @@
+{
+  "policy_name": "recommendation_rules",
+  "version": "1.0.0",
+  "description": "Deterministic Next Best Action rules for Module 2. Each rule matches a detected Issue (by issue_type and/or telemetry criteria), selects an action_category and recommendation_type, declares the MCP tools used, and carries the optimization factors used by the Optimization Impact Forecast. The LLM only explains; it never selects the action.",
+  "optimization_factors_reference": {
+    "shutdown_schedule":    { "cost": [0.20, 0.45], "energy": [0.20, 0.45], "carbon": [0.20, 0.45] },
+    "resize_workload":      { "cost": [0.40, 0.75], "energy": [0.40, 0.75], "carbon": [0.40, 0.75] },
+    "shutdown_and_resize":  { "cost": [0.25, 0.50], "energy": [0.25, 0.50], "carbon": [0.25, 0.50] },
+    "reschedule_batch_job": { "cost": [0.75, 0.90], "energy": [0.90, 1.00], "carbon": [0.60, 0.85] },
+    "enable_monitoring":    { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+    "restrict_access":      { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+    "investigate_incident": { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] }
+  },
+  "rules": [
+    {
+      "rule_id": "RULE-SEC-001",
+      "match": {
+        "issue_types": ["critical_exposed_vulnerability"],
+        "logic": "all",
+        "conditions": [
+          { "field": "public_exposure", "operator": "eq", "value": true },
+          { "field": "vulnerability_severity", "operator": "eq", "value": "critical" }
+        ]
+      },
+      "recommended_action": "Restrict public access, patch or isolate the workload, and notify the security team.",
+      "action_category": "security",
+      "recommendation_type": "restrict_access",
+      "optimization_factors": { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+      "mcp_tools": ["restrict_public_access", "pull_container_image", "notify_security_team"],
+      "execution_mode_policy": {
+        "production": "human_escalation_required",
+        "non_production": "user_approval_required"
+      },
+      "rollback_note": "Re-open access and restore previous network policy if remediation must be reverted."
+    },
+    {
+      "rule_id": "RULE-SEC-002",
+      "match": {
+        "issue_types": ["public_storage"],
+        "logic": "all",
+        "conditions": [
+          { "field": "public_storage", "operator": "eq", "value": true }
+        ]
+      },
+      "recommended_action": "Restrict public storage access, review the ACL, and notify the workload owner.",
+      "action_category": "security",
+      "recommendation_type": "restrict_access",
+      "optimization_factors": { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+      "mcp_tools": ["update_storage_acl", "restrict_public_access", "notify_owner"],
+      "execution_mode_policy": {
+        "production": "human_escalation_required",
+        "non_production": "user_approval_required"
+      },
+      "rollback_note": "Restore the previous storage ACL if remediation must be reverted."
+    },
+    {
+      "rule_id": "RULE-COST-ENERGY-001",
+      "match": {
+        "issue_types": ["idle_or_overprovisioned_workload"],
+        "logic": "all",
+        "conditions": [
+          { "field": "cpu_usage_percent", "operator": "lt", "value": 10 },
+          { "field": "runtime_hours_24h", "operator": "gte", "value": 20 },
+          { "field": "environment", "operator": "neq", "value": "production" },
+          { "field": "cost_30d_forecast", "operator": "gt", "value": 1000.0 }
+        ]
+      },
+      "recommended_action": "Schedule a shutdown during idle windows and resize the workload to a smaller tier.",
+      "action_category": "cost_energy_carbon",
+      "recommendation_type": "shutdown_and_resize",
+      "optimization_factors": { "cost": [0.25, 0.50], "energy": [0.25, 0.50], "carbon": [0.25, 0.50] },
+      "mcp_tools": ["schedule_shutdown", "resize_resource"],
+      "execution_mode_policy": {
+        "production": "user_approval_required",
+        "non_production": "auto_fix"
+      },
+      "rollback_note": "Cancel the scheduled shutdown and restore the original resource size."
+    },
+    {
+      "rule_id": "RULE-CARBON-001",
+      "match": {
+        "issue_types": ["carbon_heavy_workload"],
+        "logic": "all",
+        "conditions": [
+          { "field": "carbon_kgco2e_24h", "operator": "gt", "value": 50.0 },
+          { "field": "workflow_criticality", "operator": "in", "value": ["low", "medium"] }
+        ]
+      },
+      "recommended_action": "Reschedule the batch job to a low-carbon window and resize the compute footprint.",
+      "action_category": "carbon",
+      "recommendation_type": "reschedule_batch_job",
+      "optimization_factors": { "cost": [0.75, 0.90], "energy": [0.90, 1.00], "carbon": [0.60, 0.85] },
+      "mcp_tools": ["reschedule_batch_job", "resize_resource"],
+      "execution_mode_policy": {
+        "production": "user_approval_required",
+        "non_production": "auto_fix"
+      },
+      "rollback_note": "Restore the original batch schedule and resource size."
+    },
+    {
+      "rule_id": "RULE-PERF-001",
+      "match": {
+        "issue_types": ["high_error_rate"],
+        "logic": "all",
+        "conditions": [
+          { "field": "error_rate_percent", "operator": "gt", "value": 5.0 }
+        ]
+      },
+      "recommended_action": "Investigate logs, notify the SRE team, and create an incident ticket.",
+      "action_category": "performance",
+      "recommendation_type": "investigate_incident",
+      "optimization_factors": { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+      "mcp_tools": ["create_ticket", "notify_devops_team"],
+      "execution_mode_policy": {
+        "production": "human_escalation_required",
+        "non_production": "user_approval_required"
+      },
+      "rollback_note": null
+    },
+    {
+      "rule_id": "RULE-MON-001",
+      "match": {
+        "issue_types": ["no_monitoring"],
+        "logic": "all",
+        "conditions": [
+          { "field": "monitoring_enabled", "operator": "eq", "value": false }
+        ]
+      },
+      "recommended_action": "Enable monitoring, create an owner ticket, and add the workload to the observability dashboard.",
+      "action_category": "monitoring",
+      "recommendation_type": "enable_monitoring",
+      "optimization_factors": { "cost": [1.00, 1.00], "energy": [1.00, 1.00], "carbon": [1.00, 1.00] },
+      "mcp_tools": ["enable_monitoring", "create_ticket"],
+      "execution_mode_policy": {
+        "production": "user_approval_required",
+        "non_production": "auto_fix"
+      },
+      "rollback_note": "Disable the newly enabled monitoring configuration if it must be reverted."
+    },
+    {
+      "rule_id": "RULE-COST-001",
+      "match": {
+        "issue_types": ["cost_spike_or_waste"],
+        "logic": "all",
+        "conditions": [
+          { "field": "cost_30d_forecast", "operator": "gt", "value": 1000.0 },
+          { "field": "cpu_usage_percent", "operator": "lt", "value": 30 }
+        ]
+      },
+      "recommended_action": "Review usage, notify the owner, and resize or shut down the workload.",
+      "action_category": "cost",
+      "recommendation_type": "resize_workload",
+      "optimization_factors": { "cost": [0.40, 0.75], "energy": [0.40, 0.75], "carbon": [0.40, 0.75] },
+      "mcp_tools": ["resize_resource", "notify_owner"],
+      "execution_mode_policy": {
+        "production": "user_approval_required",
+        "non_production": "auto_fix"
+      },
+      "rollback_note": "Restore the original resource size."
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "policy_name": "detection_rules",
+  "version": "1.0.0",
+  "description": "Rule-based issue classification for Module 1 (Detection & Insight). Each rule maps telemetry conditions to one of the 7 defined issue_types and a category. Rules run independently of the Isolation Forest model so 'obvious' issues are caught even when the model is cold. Thresholds are centralized here under 'thresholds'.",
+  "thresholds": {
+    "idle_cpu_max_percent": 10,
+    "idle_runtime_min_hours": 20,
+    "low_utilization_cpu_max_percent": 30,
+    "carbon_heavy_kgco2e_24h": 50.0,
+    "cost_forecast_high_usd_30d": 1000.0,
+    "high_error_rate_percent": 5.0
+  },
+  "batch_workflows": [
+    "bim_processing",
+    "batch_reporting",
+    "document_processing",
+    "data_pipeline",
+    "report_generation",
+    "bim_model_data_processing",
+    "reporting_worker",
+    "construction_document_management"
+  ],
+  "rules": [
+    {
+      "id": "DET-SEC-001",
+      "issue_type": "public_storage",
+      "category": "security",
+      "description": "Storage resource is publicly accessible.",
+      "logic": "all",
+      "conditions": [
+        { "field": "public_storage", "operator": "eq", "value": true }
+      ],
+      "severity_hint": {
+        "production": "critical",
+        "non_production": "high",
+        "default": "high"
+      }
+    },
+    {
+      "id": "DET-SEC-002",
+      "issue_type": "critical_exposed_vulnerability",
+      "category": "security",
+      "description": "Publicly exposed workload with a critical vulnerability.",
+      "logic": "all",
+      "conditions": [
+        { "field": "public_exposure", "operator": "eq", "value": true },
+        { "field": "vulnerability_severity", "operator": "eq", "value": "critical" }
+      ],
+      "severity_hint": {
+        "production": "critical",
+        "non_production": "high",
+        "default": "critical"
+      }
+    },
+    {
+      "id": "DET-COST-001",
+      "issue_type": "idle_or_overprovisioned_workload",
+      "category": "cost_energy_carbon",
+      "description": "Low CPU utilization while running for an extended period in a non-production environment.",
+      "logic": "all",
+      "conditions": [
+        { "field": "cpu_usage_percent", "operator": "lt", "value": 10 },
+        { "field": "runtime_hours_24h", "operator": "gte", "value": 20 },
+        { "field": "environment", "operator": "neq", "value": "production" }
+      ],
+      "severity_hint": {
+        "default": "medium"
+      }
+    },
+    {
+      "id": "DET-CARBON-001",
+      "issue_type": "carbon_heavy_workload",
+      "category": "carbon",
+      "description": "High 24h carbon emissions on a batch / BIM / reporting workflow.",
+      "logic": "all",
+      "conditions": [
+        { "field": "carbon_kgco2e_24h", "operator": "gt", "value": 50.0 },
+        { "field": "construction_workflow", "operator": "in", "value_ref": "batch_workflows" }
+      ],
+      "severity_hint": {
+        "default": "medium"
+      }
+    },
+    {
+      "id": "DET-MON-001",
+      "issue_type": "no_monitoring",
+      "category": "monitoring",
+      "description": "Workload has monitoring disabled.",
+      "logic": "all",
+      "conditions": [
+        { "field": "monitoring_enabled", "operator": "eq", "value": false }
+      ],
+      "severity_hint": {
+        "production": "high",
+        "non_production": "medium",
+        "default": "medium"
+      }
+    },
+    {
+      "id": "DET-PERF-001",
+      "issue_type": "high_error_rate",
+      "category": "performance",
+      "description": "Error rate exceeds the acceptable threshold.",
+      "logic": "all",
+      "conditions": [
+        { "field": "error_rate_percent", "operator": "gt", "value": 5.0 }
+      ],
+      "severity_hint": {
+        "production": "high",
+        "non_production": "medium",
+        "default": "high"
+      }
+    },
+    {
+      "id": "DET-COST-002",
+      "issue_type": "cost_spike_or_waste",
+      "category": "cost",
+      "description": "High projected 30-day cost combined with low utilization.",
+      "logic": "all",
+      "conditions": [
+        { "field": "cost_30d_forecast", "operator": "gt", "value": 1000.0 },
+        { "field": "cpu_usage_percent", "operator": "lt", "value": 30 }
+      ],
+      "severity_hint": {
+        "default": "medium"
+      }
+    }
+  ]
+}

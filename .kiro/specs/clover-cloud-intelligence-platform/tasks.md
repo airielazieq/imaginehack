@@ -1,0 +1,474 @@
+# Implementation Plan: Clover Cloud Intelligence Platform
+
+## Overview
+
+Phased implementation prioritizing an end-to-end demo (P0) as quickly as possible. The build order is: backend spine → mock data → detection pipeline → NBA + forecast → self-healing → UI pages → polish. Each task is atomic and independently verifiable. Python 3.11+ / FastAPI for backend, React 18 + TypeScript + Vite for frontend.
+
+## Tasks
+
+- [x] 1. Backend Spine and Core Infrastructure
+  - [x] 1.1 Create FastAPI application skeleton with project structure
+    - Create `backend/main.py` with FastAPI app, CORS middleware, lifespan handler
+    - Create `backend/core/config.py` for JSON policy/config loading
+    - Create `backend/core/database.py` with SQLite connection, migrations, table schemas for workloads, telemetry, issues, recommendations, remediations, audit_logs, alerts
+    - Create `backend/core/event_bus.py` with asyncio pub/sub (EventType enum, Event dataclass, subscribe/publish)
+    - Set up `requirements.txt` or `pyproject.toml` with dependencies (fastapi, uvicorn, pydantic, scikit-learn, xgboost, shap, joblib)
+    - _Requirements: 1.1, 1.3, 21.1_
+
+  - [x] 1.2 Create Pydantic schemas for all data models
+    - Create `backend/schemas/workload.py` (Workload model)
+    - Create `backend/schemas/telemetry.py` (TelemetrySnapshot with field validators)
+    - Create `backend/schemas/issue.py` (Issue, MLResult, XAIExplanation, XAIFactor, EstimatedImpact)
+    - Create `backend/schemas/recommendation.py` (Recommendation, RuleTriggered, OptimizationImpactForecast, ForecastComponent)
+    - Create `backend/schemas/remediation.py` (RemediationResult, MCPToolExecution, SafetyDecision, AuditCompliance)
+    - Create `backend/schemas/scoring.py` (PriorityScore, DimensionScore, DimensionScores)
+    - Create `backend/schemas/alert.py` (Alert)
+    - Create `backend/schemas/audit.py` (AuditLog)
+    - Create `backend/schemas/prediction.py` (DowntimePrediction)
+    - Create `backend/schemas/api_responses.py` (success/error envelope wrappers)
+    - _Requirements: 1.1, 1.2, 21.3_
+
+  - [x]* 1.3 Write property test for telemetry validation (Property 1)
+    - **Property 1: Telemetry Validation Invariant**
+    - Use Hypothesis to generate random TelemetrySnapshot values; verify in-bounds accepted, out-of-bounds rejected with 422
+    - **Validates: Requirements 1.1, 1.2**
+
+  - [x] 1.4 Create JSON rule/policy files
+    - Create `backend/rules/detection_rules.json` with 7 rule definitions (DET-SEC-001 through DET-COST-002)
+    - Create `backend/rules/recommendation_rules.json` with 7 recommendation rules (RULE-SEC-001 through RULE-COST-001)
+    - Create `backend/rules/safety_rules.json` with auto-fix conditions, approval conditions, escalation conditions, blocklist
+    - Create `backend/rules/scoring_weights.json` with 6 factor weights summing to 1.0
+    - _Requirements: 5.1, 7.1, 12.2_
+
+  - [x] 1.5 Create telemetry ingestion API endpoint
+    - Create `backend/api/telemetry.py` with POST `/api/telemetry/ingest` and POST `/api/telemetry/bulk-ingest`
+    - Validate TelemetrySnapshot via Pydantic, persist to SQLite, emit `TELEMETRY_INGESTED` event
+    - Return 422 with structured error envelope on validation failure
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+
+  - [x] 1.6 Create workloads API endpoints
+    - Create `backend/api/workloads.py` with GET `/api/workloads`, GET `/api/workloads/{id}`, GET `/api/workloads/{id}/telemetry`
+    - Create `backend/services/workload_service.py` for workload CRUD
+    - Create `backend/services/telemetry_service.py` for telemetry persistence + query
+    - _Requirements: 21.1_
+
+- [x] 2. Mock Data Generator and Controller
+  - [x] 2.1 Create mock workload definitions and healthy baseline data
+    - Create `backend/mock_data/sample_workloads.json` with 8+ workload definitions (field-app, iot-dashboard, bim-processor, doc-storage, report-generator, ci-pipeline, costly-vm, site-db, plus extras for ~20 total)
+    - Create `backend/mock_data/healthy_baseline.json` with healthy telemetry per workload
+    - Create `backend/mock_data/scenario_payloads.json` with 7 scenario telemetry injections
+    - _Requirements: 19.1, 19.4_
+
+  - [x] 2.2 Implement mock data service
+    - Create `backend/services/mock_data_service.py` with scenario trigger logic, stream control, reset functionality
+    - Inject telemetry payloads on scenario trigger, seed workloads from sample data on startup
+    - Support continuous streaming mode (emit telemetry every 3-10s with random variation)
+    - _Requirements: 19.2, 19.3, 19.4_
+
+  - [x] 2.3 Create Mock Controller API endpoints
+    - Create `backend/api/mock_controller.py` with GET `/api/mock/scenarios`, POST `/api/mock/trigger/{scenarioId}`, POST `/api/mock/reset`, POST `/api/mock/stream/start`, POST `/api/mock/stream/stop`, GET `/api/mock/status`
+    - Wire triggers to mock_data_service → telemetry ingestion → event bus pipeline
+    - _Requirements: 19.1, 19.2, 19.3, 19.4_
+
+  - [x] 2.4 Generate ML training data
+    - Create `backend/mock_data/training_data.csv` generation script
+    - Generate 50-200 historical rows per workload for XGBoost training
+    - Target values: `current_24h × 30 × random(0.85, 1.20)` for cost, energy, carbon
+    - _Requirements: 6.1_
+
+- [x] 3. Module 1: Detection & Insight Engine
+  - [x] 3.1 Implement rule-based detection and classification
+    - Create `backend/modules/detection_insight/rule_classifier.py` — load `detection_rules.json`, evaluate each rule against TelemetrySnapshot, classify into issue_type + category
+    - Create `backend/modules/detection_insight/severity_assigner.py` — assign severity (low/medium/high/critical) and confidence score based on rule conditions + environment + criticality
+    - _Requirements: 3.1, 3.2_
+
+  - [x] 3.2 Implement Isolation Forest anomaly detection
+    - Create `backend/modules/detection_insight/isolation_forest.py` — train IsolationForest on workload historical data (17 features, contamination=0.1), produce anomaly_score + is_anomaly
+    - Create `backend/ml/train_isolation_forest.py` — training script that saves model to `backend/ml/models/`
+    - Implement fallback: if model unavailable, return default MLResult with model_name="fallback_rules_only"
+    - _Requirements: 2.1, 2.3_
+
+  - [x] 3.3 Implement SHAP explainer
+    - Create `backend/modules/detection_insight/shap_explainer.py` — use `shap.TreeExplainer` on Isolation Forest, return top 3-5 XAIFactors sorted by absolute SHAP value
+    - Include plain-language impact strings from lookup table
+    - Fallback: rule-based feature contribution with method="rule-based feature contribution fallback"
+    - _Requirements: 2.2, 4.2_
+
+  - [x] 3.4 Implement LLM/template explanation generator
+    - Create `backend/modules/detection_insight/llm_explainer.py` — generate 2-3 sentence plain-language explanation
+    - Implement template fallback: `"This workload was flagged for {issue_type} because {top_evidence}. It may affect {impact_area}."`
+    - LLM used only for wording, never classification
+    - _Requirements: 4.1, 4.3, 4.4_
+
+  - [x] 3.5 Implement detection orchestrator with issue consolidation
+    - Create `backend/modules/detection_insight/detector.py` — orchestrate: preprocessing → IF → SHAP → rule classifier → severity → LLM explanation → emit Issue event
+    - Implement 5-minute window consolidation (same workload → single Issue with max severity)
+    - Create `backend/api/detection.py` with POST `/api/detection/run`, POST `/api/detection/run/{workloadId}`, GET `/api/issues`, GET `/api/issues/{id}`, PATCH `/api/issues/{id}/status`
+    - Subscribe to `TELEMETRY_INGESTED` events on the event bus
+    - _Requirements: 2.1, 2.4, 3.3, 18.1, 18.2_
+
+  - [x]* 3.6 Write property tests for detection output (Properties 2, 3, 4)
+    - **Property 2: Detection Output Structure Invariant** — any valid telemetry → Issue has ml_result, xai_explanation, llm_user_explanation
+    - **Property 3: Issue Classification Invariant** — issue_type in defined set, severity in {low,medium,high,critical}, confidence in [0,1]
+    - **Property 4: Issue Consolidation** — same workload within 5min → single Issue with max severity
+    - **Validates: Requirements 2.1, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2**
+
+- [ ] 4. Module 2: Next Best Action + Forecasting
+  - [x] 4.1 Implement rule-based recommendation engine
+    - Create `backend/modules/next_best_action/nba_engine.py` — load `recommendation_rules.json`, match Issue to rule, produce Recommendation with action_category, recommendation_type, rule_triggered
+    - Create `backend/modules/next_best_action/risk_assessor.py` — assign risk_level based on environment + reversibility + sensitivity + criticality
+    - Select execution_mode from risk→mode mapping (low+reversible+non-prod → auto_fix, medium/high → approval, critical → escalation)
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+
+  - [x] 4.2 Implement XGBoost 30-day forecaster
+    - Create `backend/modules/next_best_action/xgboost_forecast.py` — train 3 XGBoost Regressors (cost_30d, energy_kwh_30d, carbon_kgco2e_30d) from training data
+    - Create `backend/ml/train_xgboost.py` — training script saving models to `backend/ml/models/`
+    - Implement formula fallback: `current_24h × 30` with model_name="deterministic_forecast_fallback"
+    - _Requirements: 6.1, 6.3_
+
+  - [x] 4.3 Implement optimization impact calculator
+    - Create `backend/modules/next_best_action/optimization_impact.py` — apply optimization factors per recommendation type to compute forecast_without_action, forecast_after_action, projected_savings
+    - Enforce arithmetic consistency: without - after = savings for each dimension
+    - Ensure all savings values are non-negative
+    - _Requirements: 6.2, 6.4_
+
+  - [~] 4.4 Wire NBA pipeline and create API endpoints
+    - Subscribe NBA engine to `ISSUE_DETECTED` events on event bus
+    - Create `backend/api/recommendations.py` with POST `/api/recommendations/generate/{issueId}`, GET `/api/recommendations/{id}`, POST `/api/forecast/{workloadId}`
+    - Emit `RECOMMENDATION_GENERATED` event after producing recommendation
+    - _Requirements: 5.1, 21.1_
+
+  - [~]* 4.5 Write property tests for NBA (Properties 5, 6, 7)
+    - **Property 5: NBA Output and Rule Traceability** — any valid Issue → exactly one Recommendation with non-empty rule_id + conditions_matched
+    - **Property 6: Risk-to-Execution-Mode Consistency** — risk level matches context→risk mapping, mode matches risk→mode mapping
+    - **Property 7: Forecast Completeness and Arithmetic Consistency** — all forecast components non-negative, without - after = savings
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 6.1, 6.2, 6.4**
+
+- [ ] 5. Module 3: Guardrailed Self-Healing
+  - [~] 5.1 Implement safety router
+    - Create `backend/modules/self_healing/safety_router.py` — load `safety_rules.json`, evaluate all 7 auto-fix conditions; route to auto_fix / user_approval_required / human_escalation_required
+    - Critical risk → always human_escalation regardless of other conditions
+    - Deterministic: identical inputs → identical routing decision
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+  - [~] 5.2 Implement MCP connectors (simulated)
+    - Create `backend/connectors/mcp_base.py` — base MCPConnector protocol with execute_tool + get_available_tools
+    - Create `backend/connectors/cloud_connector.py` — simulated infra ops (restart, scale, stop, resize, etc.)
+    - Create `backend/connectors/ticketing_connector.py` — simulated ticket creation
+    - Create `backend/connectors/notification_connector.py` — simulated notifications
+    - Create `backend/connectors/audit_connector.py` — audit log writer
+    - Each tool returns MCPToolExecution with simulated duration, status, input/output
+    - _Requirements: 8.1, 10.1, 10.2_
+
+  - [~] 5.3 Implement runbook executor with verification and rollback
+    - Create `backend/modules/self_healing/runbook_executor.py` — execute runbook steps via MCP connectors sequentially
+    - Create `backend/modules/self_healing/verification.py` — post-fix health check within 30s timeout
+    - Create `backend/modules/self_healing/rollback.py` — rollback within 60s on verification failure, then escalate
+    - _Requirements: 8.1, 8.2, 8.3_
+
+  - [~] 5.4 Implement approval queue management
+    - Create `backend/modules/self_healing/approval_queue.py` — add to queue sorted by severity (Critical→High→Medium→Low), 15-min escalation countdown for high-risk items, auto-escalate on timeout
+    - Create `backend/api/approvals.py` with GET `/api/approvals`, POST `/api/approvals/{id}/approve`, POST `/api/approvals/{id}/deny`, POST `/api/approvals/{id}/snooze`
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+
+  - [~] 5.5 Implement remediation report generator and API
+    - Create `backend/modules/self_healing/report_generator.py` — build RemediationResult with execution_timeline, mcp_tools_executed, safety_decision, audit_compliance, user_facing_report
+    - Create `backend/api/remediation.py` with POST `/api/remediation/evaluate/{recId}`, POST `/api/remediation/execute/{recId}`, GET `/api/remediation/{id}/report`
+    - Emit `REMEDIATION_COMPLETED` event, persist result with links to Issue + Recommendation + Workload
+    - _Requirements: 8.4, 11.1, 11.2, 11.3_
+
+  - [~]* 5.6 Write property tests for self-healing (Properties 8, 9, 10)
+    - **Property 8: Safety Routing Correctness** — auto_fix iff all 7 conditions met; critical → always escalation; deterministic
+    - **Property 9: Remediation Report Completeness** — completed remediation has non-empty timeline, tools, audit, report, traceability links
+    - **Property 10: Approval Queue Ordering** — queue maintains severity sort (Critical > High > Medium > Low)
+    - **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 8.4, 9.1, 11.1, 11.2, 11.3**
+
+- [~] 6. Checkpoint - Backend Pipeline End-to-End
+  - Ensure the full pipeline works: ingest telemetry → detect issue → generate recommendation → route through self-healing → produce report
+  - Trigger mock scenario and verify end-to-end completion
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 7. Scoring Engine and Downtime Prediction
+  - [~] 7.1 Implement priority score computation
+    - Create `backend/modules/scoring/priority_scorer.py` — compute 6-factor weighted Priority Score (0-100, 1dp)
+    - Load weights from `scoring_weights.json`, validate sum = 1.0
+    - Recompute on Issue/Recommendation/Remediation state changes (subscribe to events)
+    - Handle missing factors: redistribute weight proportionally, list in unavailable_factors
+    - _Requirements: 12.1, 12.2, 12.3_
+
+  - [~] 7.2 Implement dimension scores
+    - Create `backend/modules/scoring/dimension_scorer.py` — compute 6 dimension scores (security, energy, carbon, cost, performance, monitoring) each 0-100
+    - Map state: ≥75 → green, 50-74 → yellow, <50 → red, insufficient data → gray
+    - Create `backend/api/scoring.py` with GET `/api/scoring/issues`
+    - _Requirements: 12.4_
+
+  - [~] 7.3 Implement downtime prediction engine
+    - Create `backend/modules/downtime_prediction/predictor.py` — compute failure probability (0-100%), estimated TTF, confidence, primary/secondary signals from telemetry trends (linear regression on metric degradation)
+    - Create `backend/modules/downtime_prediction/timeline.py` — generate 12-point hourly risk timeline
+    - When probability > 70%, trigger preemptive Recommendation via NBA engine
+    - Add GET `/api/workloads/{id}/prediction` endpoint
+    - _Requirements: 14.1, 14.2, 14.3, 14.4_
+
+  - [~]* 7.4 Write property tests for scoring and prediction (Properties 11, 12, 14)
+    - **Property 11: Priority Score Computation** — valid weights (sum=1.0) + factors in [0,1] → score in [0,100] with 1dp; invalid weights rejected
+    - **Property 12: Dimension Score State Mapping** — score ≥75 → green, 50-74 → yellow, <50 → red, no data → gray
+    - **Property 14: Downtime Prediction Output Completeness** — probability in [0,100], non-empty primary_signal, confidence in {low,medium,high}, timeline length=12, preemptive action non-null iff probability>70%
+    - **Validates: Requirements 12.1, 12.2, 12.4, 14.1, 14.2, 14.3, 14.4**
+
+- [ ] 8. Dashboard API and Summary Endpoints
+  - [~] 8.1 Create dashboard API endpoints
+    - Create `backend/api/dashboard.py` with GET `/api/dashboard/summary` (stat cards: total workloads, active issues, pending approvals, projected savings), GET `/api/dashboard/heatmap/composite` (Priority Scores per workload), GET `/api/dashboard/heatmap/matrix` (Dimension Scores per workload), GET `/api/dashboard/savings`, GET `/api/dashboard/recent-actions`
+    - _Requirements: 16.1, 16.2, 21.1_
+
+  - [~] 8.2 Create uptime history endpoint
+    - Add GET `/api/workloads/{id}/uptime` — return 90-day uptime segments
+    - Generate synthetic uptime history from mock data
+    - _Requirements: 17.3_
+
+- [x] 9. Frontend: New Project Setup and Core UI
+  - [x] 9.1 Initialize new TypeScript React frontend project
+    - Create `frontend/` directory with Vite + React 18 + TypeScript template
+    - Configure Tailwind CSS (dark navy base, teal/green healthy, yellow/orange warning, red/pink critical)
+    - Install dependencies: react-router-dom, recharts, lucide-react, axios
+    - Create `frontend/src/types/` with all TypeScript interfaces matching backend schemas (workload.ts, issue.ts, recommendation.ts, remediation.ts, scoring.ts, alert.ts, audit.ts, api.ts)
+    - _Requirements: 16.1, 21.1_
+
+  - [x] 9.2 Create API client and shared hooks
+    - Create `frontend/src/api/client.ts` — axios wrapper with base URL config, error interceptor
+    - Create `frontend/src/api/endpoints.ts` — typed API functions for all backend endpoints
+    - Create `frontend/src/hooks/useWorkloads.ts`, `frontend/src/hooks/useIssues.ts` — data fetching hooks
+    - Create `frontend/src/lib/colorScale.ts` — Priority Score → green-to-red gradient color mapping
+    - Create `frontend/src/lib/formatters.ts` — date, currency, percentage formatters
+    - Create `frontend/src/lib/constants.ts` — API URLs, thresholds
+    - _Requirements: 21.1_
+
+  - [x] 9.3 Create layout components and routing
+    - Create `frontend/src/App.tsx` with React Router (routes: /, /workloads, /workloads/:id, /issues, /issues/:id, /approvals, /reports, /audit, /mock)
+    - Create `frontend/src/components/layout/Header.tsx` — nav with pending-approvals badge
+    - Create `frontend/src/components/layout/Sidebar.tsx` — navigation menu
+    - Create `frontend/src/components/layout/SimBanner.tsx` — "Simulation Mode" banner
+    - _Requirements: 16.1, 17.1_
+
+- [ ] 10. Frontend: Dashboard with Dual Heatmap
+  - [~] 10.1 Implement composite heatmap grid
+    - Create `frontend/src/components/heatmap/CompositeGrid.tsx` — grid of cells, one per workload, colored green→red based on Priority Score
+    - Create `frontend/src/components/heatmap/HeatmapCell.tsx` — individual cell with hover tooltip (name, score, status, top alert, downtime risk)
+    - Create `frontend/src/components/heatmap/HeatmapToggle.tsx` — composite ↔ matrix switch
+    - Click on cell navigates to `/workloads/:id`
+    - _Requirements: 16.1, 16.3, 16.4_
+
+  - [~] 10.2 Implement dimension matrix heatmap
+    - Create `frontend/src/components/heatmap/MatrixView.tsx` — rows=workloads, columns=Security/Energy/Carbon/Cost/Performance/Monitoring, cells colored green/yellow/red/gray
+    - Click on cell navigates to workload detail relevant tab
+    - _Requirements: 16.2_
+
+  - [~] 10.3 Implement Dashboard page with summary cards
+    - Create `frontend/src/pages/Dashboard.tsx` — stat summary cards (total workloads, active issues, pending approvals, projected savings) + heatmap toggle + composite/matrix view
+    - Create `frontend/src/components/cards/SummaryCards.tsx`
+    - _Requirements: 16.1, 16.2_
+
+- [ ] 11. Frontend: Issues, Recommendations, and XAI Views
+  - [~] 11.1 Implement Issues List page
+    - Create `frontend/src/pages/Issues.tsx` — sortable/filterable table with columns: workload name, issue_type, severity, confidence, detected_at
+    - Create filter controls for issue_type, severity, issue_category
+    - Create `frontend/src/components/ui/DataTable.tsx` — reusable sortable/filterable table
+    - Create `frontend/src/components/ui/Badge.tsx` — severity/status badges
+    - _Requirements: 18.1, 18.2_
+
+  - [~] 11.2 Implement Issue Detail page with XAI card and forecast
+    - Create `frontend/src/pages/IssueDetail.tsx` — XAI explanation card, Optimization Impact Forecast, recommended action CTA, execution status
+    - Create `frontend/src/components/cards/XAICard.tsx` — SHAP top factors table (Feature | Value | Impact)
+    - Create `frontend/src/components/cards/OptimizationForecast.tsx` — before/after/savings cards + bar chart + savings badge
+    - Create `frontend/src/components/charts/ForecastChart.tsx` — Recharts bar chart for cost/energy/carbon comparison
+    - Create `frontend/src/components/cards/SavingsBadge.tsx`
+    - _Requirements: 18.3, 4.2, 6.2_
+
+- [ ] 12. Frontend: Self-Healing Workflow Pages
+  - [~] 12.1 Implement Approvals page
+    - Create `frontend/src/pages/Approvals.tsx` — global approval queue sorted by severity
+    - Create `frontend/src/components/workflow/ApprovalItem.tsx` — workload, action, AI rationale, risk badge, environment, MCP tools, time-since-request, escalation countdown, Approve/Deny/Snooze buttons
+    - Create `frontend/src/components/workflow/EscalationTimer.tsx` — countdown display (pulsing for critical)
+    - Create `frontend/src/components/workflow/ExecutionPath.tsx` — auto/approval/escalation indicator
+    - Create `frontend/src/components/ui/Modal.tsx` — confirmation modal for approve/deny actions
+    - _Requirements: 9.1, 9.2, 10.3_
+
+  - [~] 12.2 Implement Reports page
+    - Create `frontend/src/pages/Reports.tsx` — remediation reports list with status, workload, path, timestamp
+    - Create `frontend/src/components/workflow/RemediationReport.tsx` — full report view (execution timeline, MCP tools, before/after, safety decision, audit compliance, user-facing narrative)
+    - _Requirements: 11.1, 11.2_
+
+- [ ] 13. Frontend: Workload Detail and Supporting Pages
+  - [~] 13.1 Implement Workload Detail page with tabs
+    - Create `frontend/src/pages/WorkloadDetail.tsx` — tabbed view: Overview, Security, GreenOps, AI Recommendations, Self-Healing, MCP Activity
+    - Overview tab: downtime prediction panel + 90-day uptime bar + latest telemetry summary
+    - Create `frontend/src/components/cards/DowntimePrediction.tsx` — probability gauge, TTF, contributing signals, 12-point risk timeline, preemptive action CTA
+    - Create `frontend/src/components/charts/RiskTimeline.tsx` — Recharts 12-point hourly bar chart
+    - Create `frontend/src/components/charts/UptimeBar.tsx` — 90-day segmented uptime visualization
+    - _Requirements: 17.1, 17.2, 17.3, 14.1, 14.2_
+
+  - [~] 13.2 Implement Mock Controller page
+    - Create `frontend/src/pages/MockController.tsx` — list of 7 scenarios with trigger buttons, stream start/stop toggle, reset button, status indicator
+    - Show scenario descriptions, target workloads, expected pipeline path
+    - _Requirements: 19.1, 19.2, 19.3, 19.4_
+
+  - [~] 13.3 Implement Workloads list page
+    - Create `frontend/src/pages/Workloads.tsx` — table of all workloads with name, type, environment, criticality, status, priority score
+    - Click navigates to `/workloads/:id`
+    - _Requirements: 21.1_
+
+- [~] 14. Checkpoint - P0 Demo End-to-End
+  - Verify full demo flow: trigger scenario → issue with XAI → recommendation with forecast → self-healing → report → heatmap update
+  - Idle dev server auto-fix: heatmap cell transitions from red/yellow to green
+  - Critical vulnerability escalation: ticket created, notification sent, pulsing indicator, audit log
+  - Ensure all tests pass, ask the user if questions arise.
+  - _Requirements: 22.1, 22.2, 22.3_
+
+- [ ] 15. P1: Audit Logging and Audit Page
+  - [~] 15.1 Implement audit log service and event subscribers
+    - Create `backend/services/audit_service.py` — append audit entries on every state transition (Issue, Recommendation, Remediation)
+    - Subscribe to all relevant events on event bus (ISSUE_DETECTED, RECOMMENDATION_GENERATED, REMEDIATION_COMPLETED, SCORE_UPDATED)
+    - Include workload_id, issue_id, recommendation_id, remediation_id, actor, previous_status, new_status, timestamp
+    - Log rollback events with original action details and rollback outcome
+    - Enforce 90-day retention
+    - _Requirements: 15.1, 15.2, 15.3, 15.4_
+
+  - [~] 15.2 Create audit log API endpoints
+    - Create `backend/api/audit.py` with GET `/api/audit-logs` (filterable by workload_id, event_type, date range), GET `/api/audit-logs/{id}`
+    - _Requirements: 15.1, 21.1_
+
+  - [~] 15.3 Implement Audit Logs frontend page
+    - Create `frontend/src/pages/AuditLogs.tsx` — sortable table with columns: timestamp, event_type, actor, workload, status change, details
+    - Add filtering by workload, event type, date range
+    - _Requirements: 15.1_
+
+  - [~]* 15.4 Write property test for audit logging (Property 15)
+    - **Property 15: Audit Log on State Transitions** — any state transition → AuditLog entry with non-empty workload_id, correct previous/new status, timestamp, applicable entity IDs
+    - **Validates: Requirements 15.1, 15.3**
+
+- [ ] 16. P1: Alert System
+  - [~] 16.1 Implement alert engine
+    - Create `backend/modules/alerts/alert_engine.py` — generate alerts when Priority Score exceeds thresholds (>80 critical, 60-80 high, 30-60 medium, ≤30 low)
+    - Subscribe to SCORE_UPDATED events
+    - _Requirements: 13.1_
+
+  - [~] 16.2 Implement alert suppression and delivery
+    - Create `backend/modules/alerts/suppression.py` — 15-minute window suppression for same workload_id + issue_type, increment counter
+    - Create `backend/modules/alerts/delivery.py` — deliver critical within 30s, non-critical within 5min, retry 3× at 10s intervals, mark delivery_failed
+    - Implement auto-resolve within 60s when condition clears
+    - Create `backend/api/alerts.py` with GET `/api/alerts` (filterable by workload, severity, status)
+    - _Requirements: 13.2, 13.3, 13.4_
+
+  - [~]* 16.3 Write property test for alerts (Property 13)
+    - **Property 13: Alert Generation and Suppression** — Priority Score > 80 → alert generated with correct severity; same workload+issue_type within 15min → suppressed
+    - **Validates: Requirements 13.1, 13.3**
+
+- [ ] 17. P1: WebSocket Real-Time Updates
+  - [~] 17.1 Implement WebSocket endpoint and event streaming
+    - Create `backend/api/websocket.py` with WS `/ws/events` endpoint
+    - Stream events: heatmap_update, alert_new, healing_status, approval_count, prediction_update
+    - Subscribe to relevant event bus events and broadcast to connected WebSocket clients
+    - Push updates within 2 seconds of state change
+    - _Requirements: 20.1, 20.2_
+
+  - [~] 17.2 Implement frontend WebSocket hook and stale indicator
+    - Create `frontend/src/api/websocket.ts` — WebSocket manager with connect, disconnect, reconnect with exponential backoff (1s→30s max)
+    - Create `frontend/src/hooks/useWebSocket.ts` — connection lifecycle, event dispatch to state
+    - Create `frontend/src/hooks/useRealtime.ts` — real-time state updates for heatmap, alerts, approvals
+    - Create `frontend/src/components/ui/StaleIndicator.tsx` — "Data Stale" warning on connection loss
+    - _Requirements: 20.1, 20.2, 20.3_
+
+- [ ] 18. P1: Missing Monitoring Detection + Ticketing/Notification
+  - [~] 18.1 Implement missing-monitoring detection and NBA path
+    - Add DET-MON-001 rule evaluation in detector (monitoring_enabled == false)
+    - Add RULE-MON-001 in NBA engine: enable monitoring / create ticket
+    - Route: auto-enable if safe (non-prod), else create ticket via ticketing connector
+    - _Requirements: 3.1, 5.1, 19.1_
+
+  - [~] 18.2 Wire ticketing and notification connectors into self-healing
+    - Ensure `ticketing_connector.py` creates tickets on escalation with full Issue + Recommendation + Workload context
+    - Ensure `notification_connector.py` sends notifications to owner_team and security_team (for security issues)
+    - Log all connector invocations in MCP activity log
+    - Create `backend/api/mcp_log.py` with GET `/api/mcp/log`
+    - _Requirements: 10.1, 10.2_
+
+- [~] 19. Checkpoint - P1 Complete
+  - Verify audit logs record every state transition
+  - Verify alerts fire, suppress duplicates, and auto-resolve
+  - Verify WebSocket pushes heatmap updates, alert badges, approval counts in real-time
+  - Verify missing-monitoring scenario triggers full pipeline
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 20. P2: Full Priority Score Engine (Stretch)
+  - [~] 20.1 Implement full 6-factor weighted priority score with constraints
+    - Enhance `priority_scorer.py` with constraint: security_severity and environment_type each ≥ 1.5× average of other four weights
+    - Add tiebreaker: earlier detection_timestamp ranks higher
+    - Recompute within 5 seconds of any state change
+    - _Requirements: 12.1, 12.2, 12.3_
+
+  - [~]* 20.2 Write property test for full priority score (Property 11 - extended)
+    - **Property 11: Priority Score Computation (extended)** — weight constraints validated, tiebreaker correct, recomputation timing
+    - **Validates: Requirements 12.1, 12.2, 12.3**
+
+- [ ] 21. P2: Full Alert System and Runbook Depth (Stretch)
+  - [~] 21.1 Implement full alert delivery SLAs and retry logic
+    - Add delivery SLA tracking: critical within 30s, non-critical within 5min
+    - Implement 3× retry at 10s intervals → mark delivery_failed
+    - Auto-resolve within 60s when Priority Score drops below threshold
+    - _Requirements: 13.2, 13.4_
+
+  - [~] 21.2 Implement runbook verification/rollback timeout enforcement
+    - Enforce hard timeouts: runbook execution 120s → abort + escalate, verification 30s → rollback, rollback 60s → abort + escalate
+    - Log timeout events in audit trail
+    - _Requirements: 8.2, 8.3_
+
+  - [~]* 21.3 Write property test for API error responses (Property 16)
+    - **Property 16: API Error Response Structure** — any invalid request → response has `{"error": true, "code": <string>, "message": <string>}` with HTTP status ≥ 400
+    - **Validates: Requirements 21.3**
+
+- [~] 22. Final Checkpoint - Full Platform Verification
+  - Verify all 7 demo scenarios complete end-to-end within 60 seconds
+  - Verify heatmap transitions (red→green on auto-fix, pulsing on critical escalation)
+  - Verify all API endpoints return correct envelope format
+  - Verify graceful degradation: disable ML models → platform still functions with fallbacks
+  - Ensure all tests pass, ask the user if questions arise.
+  - _Requirements: 22.1, 22.2, 22.3_
+
+## Notes
+
+- Tasks marked with `*` are optional property-based test tasks and can be skipped for faster MVP
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation at phase boundaries
+- Property tests validate universal correctness properties from the design document using Hypothesis
+- Unit tests validate specific examples and edge cases
+- The existing `clover_ui/` prototype can be referenced for design patterns but the new `frontend/` uses TypeScript
+- All ML models have formula/template fallbacks — the system is fully functional without ML
+- Backend is Python 3.11+ / FastAPI; Frontend is React 18 + TypeScript + Vite + Tailwind + Recharts + Lucide
+
+## Task Dependency Graph
+
+```json
+{
+  "waves": [
+    { "id": 0, "tasks": ["1.1", "1.2"] },
+    { "id": 1, "tasks": ["1.3", "1.4", "1.5", "1.6"] },
+    { "id": 2, "tasks": ["2.1", "2.4", "9.1"] },
+    { "id": 3, "tasks": ["2.2", "2.3", "9.2", "9.3"] },
+    { "id": 4, "tasks": ["3.1", "3.2", "3.3", "3.4"] },
+    { "id": 5, "tasks": ["3.5", "3.6"] },
+    { "id": 6, "tasks": ["4.1", "4.2", "4.3"] },
+    { "id": 7, "tasks": ["4.4", "4.5"] },
+    { "id": 8, "tasks": ["5.1", "5.2"] },
+    { "id": 9, "tasks": ["5.3", "5.4", "5.5"] },
+    { "id": 10, "tasks": ["5.6", "7.1", "7.2"] },
+    { "id": 11, "tasks": ["7.3", "7.4", "8.1", "8.2"] },
+    { "id": 12, "tasks": ["10.1", "10.2", "10.3", "11.1", "11.2"] },
+    { "id": 13, "tasks": ["12.1", "12.2", "13.1", "13.2", "13.3"] },
+    { "id": 14, "tasks": ["15.1", "15.2"] },
+    { "id": 15, "tasks": ["15.3", "15.4", "16.1"] },
+    { "id": 16, "tasks": ["16.2", "16.3", "17.1"] },
+    { "id": 17, "tasks": ["17.2", "18.1", "18.2"] },
+    { "id": 18, "tasks": ["20.1", "20.2"] },
+    { "id": 19, "tasks": ["21.1", "21.2", "21.3"] }
+  ]
+}
+```

@@ -1,0 +1,137 @@
+{
+  "_comment": "Next Best Action rules for Module 2 (ARCHITECTURE.md §6.5). Maps detected issue_type -> recommendation, execution-mode policy, and optimization factors (§8.11). Merge behaviour (§6.6) is keyed by root_cause_group: rules sharing a group merge into one primary action; different groups stay separate. The AI/Mock-Data subteam owns the optimization_factors + forecast; the safety/execution-mode decision is finalised by the SE backend's safety engine (§13).",
+  "version": 1,
+  "rules": [
+    {
+      "rule_id": "RULE-SEC-001",
+      "issue_type": "critical_exposed_vulnerability",
+      "root_cause_group": "security_exposure",
+      "recommendation_type": "patch_vulnerability",
+      "action_category": "security_remediation",
+      "recommended_action": "Restrict public access, patch or isolate the workload, and notify the security team.",
+      "execution_mode_by_environment": {
+        "production": "human_escalation_required",
+        "staging": "user_approval_required",
+        "testing": "user_approval_required",
+        "development": "user_approval_required"
+      },
+      "rollback_note": "Re-open access only after the vulnerability is confirmed patched. Isolation can be reverted by restoring the previous security group.",
+      "optimization_factors": {"cost": 1.0, "energy": 1.0, "carbon": 1.0}
+    },
+    {
+      "rule_id": "RULE-SEC-002",
+      "issue_type": "public_storage",
+      "root_cause_group": "security_exposure",
+      "recommendation_type": "restrict_public_access",
+      "action_category": "security_remediation",
+      "recommended_action": "Restrict public storage access, review the bucket/container access policy, and notify the owner/security team.",
+      "execution_mode_by_environment": {
+        "production": "human_escalation_required",
+        "staging": "user_approval_required",
+        "testing": "user_approval_required",
+        "development": "user_approval_required"
+      },
+      "sensitive_data_forces_escalation": true,
+      "rollback_note": "Access policy change is reversible by restoring the previous bucket policy if the exposure was intended.",
+      "optimization_factors": {"cost": 1.0, "energy": 1.0, "carbon": 1.0}
+    },
+    {
+      "rule_id": "RULE-COST-ENERGY-001",
+      "issue_type": "idle_or_overprovisioned_workload",
+      "root_cause_group": "low_utilization_waste",
+      "recommendation_type": "shutdown_schedule_and_resize",
+      "action_category": "cost_energy_carbon_optimization",
+      "recommended_action": "Limit usage during inactive hours: schedule shutdown outside working hours and resize the workload.",
+      "execution_mode_by_environment": {
+        "production": "user_approval_required",
+        "staging": "auto_fix",
+        "testing": "auto_fix",
+        "development": "auto_fix"
+      },
+      "rollback_note": "The workload can be restarted manually or automatically if needed. Resource limits can be restored to the previous configuration.",
+      "optimization_factors": {"cost": 0.45, "energy": 0.45, "carbon": 0.45}
+    },
+    {
+      "rule_id": "RULE-CARBON-001",
+      "issue_type": "carbon_heavy_workload",
+      "root_cause_group": "low_utilization_waste",
+      "recommendation_type": "reschedule_batch_job",
+      "action_category": "carbon_optimization",
+      "recommended_action": "Reschedule the job to a lower-carbon window, reduce frequency, or resize compute.",
+      "execution_mode_by_environment": {
+        "production": "user_approval_required",
+        "staging": "user_approval_required",
+        "testing": "auto_fix",
+        "development": "auto_fix"
+      },
+      "rollback_note": "The original schedule can be restored at any time; rescheduling does not alter job output.",
+      "optimization_factors": {"cost": 0.85, "energy": 0.95, "carbon": 0.70}
+    },
+    {
+      "rule_id": "RULE-PERF-001",
+      "issue_type": "high_error_rate",
+      "root_cause_group": "reliability",
+      "recommendation_type": "investigate_and_notify",
+      "action_category": "performance_remediation",
+      "recommended_action": "Investigate logs, notify DevOps/SRE, and create an incident if in production.",
+      "execution_mode_by_environment": {
+        "production": "human_escalation_required",
+        "staging": "user_approval_required",
+        "testing": "auto_fix",
+        "development": "auto_fix"
+      },
+      "rollback_note": "Notification/ticket creation is non-destructive and requires no rollback.",
+      "optimization_factors": {"cost": 1.0, "energy": 1.0, "carbon": 1.0}
+    },
+    {
+      "rule_id": "RULE-MON-001",
+      "issue_type": "no_monitoring",
+      "root_cause_group": "observability",
+      "recommendation_type": "enable_monitoring",
+      "action_category": "observability_remediation",
+      "recommended_action": "Enable monitoring, create an owner ticket, and add the workload to the dashboard.",
+      "execution_mode_by_environment": {
+        "production": "user_approval_required",
+        "staging": "auto_fix",
+        "testing": "auto_fix",
+        "development": "auto_fix"
+      },
+      "rollback_note": "Monitoring can be disabled again if enabled in error; no workload disruption.",
+      "optimization_factors": {"cost": 1.0, "energy": 1.0, "carbon": 1.0}
+    },
+    {
+      "rule_id": "RULE-COST-001",
+      "issue_type": "cost_spike_or_waste",
+      "root_cause_group": "low_utilization_waste",
+      "recommendation_type": "resize_workload",
+      "action_category": "cost_optimization",
+      "recommended_action": "Review usage, notify the owner, and resize or schedule shutdown.",
+      "execution_mode_by_environment": {
+        "production": "user_approval_required",
+        "staging": "user_approval_required",
+        "testing": "auto_fix",
+        "development": "auto_fix"
+      },
+      "rollback_note": "Resource limits can be restored to the previous configuration if utilisation rises.",
+      "optimization_factors": {"cost": 0.60, "energy": 0.60, "carbon": 0.60}
+    }
+  ],
+  "merge_policy": {
+    "_comment": "§6.6: rules in the same root_cause_group merge into one primary recommendation. Primary = most specific operational trigger; ties broken by severity then by least-permissive execution mode. Different groups never merge.",
+    "primary_rule_priority": [
+      "RULE-COST-ENERGY-001",
+      "RULE-COST-001",
+      "RULE-CARBON-001"
+    ]
+  },
+  "optimization_factors_reference": {
+    "_comment": "Canonical table from §8.11. Engine picks the factor set tied to the chosen recommendation_type; ranges are collapsed to the conservative single value baked into each rule above.",
+    "shutdown_schedule": {"cost": [0.20, 0.45], "energy": [0.20, 0.45], "carbon": [0.20, 0.45]},
+    "resize_workload": {"cost": [0.40, 0.75], "energy": [0.40, 0.75], "carbon": [0.40, 0.75]},
+    "shutdown_and_resize": {"cost": [0.25, 0.50], "energy": [0.25, 0.50], "carbon": [0.25, 0.50]},
+    "reschedule_batch_job": {"cost": [0.75, 0.90], "energy": [0.90, 1.00], "carbon": [0.60, 0.85]},
+    "enable_monitoring": {"cost": 1.00, "energy": 1.00, "carbon": 1.00},
+    "restrict_public_access": {"cost": 1.00, "energy": 1.00, "carbon": 1.00},
+    "patch_vulnerability": {"cost": 1.00, "energy": 1.00, "carbon": 1.00}
+  }
+}

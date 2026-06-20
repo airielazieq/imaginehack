@@ -1,0 +1,24 @@
+# Clover Cloud Intelligence Platform - Backend dependencies
+# Target: Python 3.11+
+
+# Web framework / API layer
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# ML / forecasting / explainability
+scikit-learn==1.6.1
+xgboost==2.1.3
+# shap 0.46.0 has no prebuilt cp313/Windows wheel and needs a C/C++ build
+# toolchain; 0.48.0 ships a cp313 wheel and is API-compatible for TreeExplainer.
+shap==0.48.0
+numba==0.65.1
+llvmlite==0.47.0
+joblib==1.4.2
+numpy==2.1.3
+pandas==2.2.3
+
+# Testing (unit + property-based)
+pytest==8.3.4
+hypothesis==6.122.3
+httpx==0.28.1

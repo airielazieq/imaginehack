@@ -1,0 +1,26 @@
+{
+  "policy_name": "scoring_weights",
+  "version": "1.0.0",
+  "description": "Weights for the 6-factor weighted Priority Score (0-100). Each weight is in [0,1] and the six weights sum to exactly 1.0. Constraint: security_severity and environment_type each >= 1.5x the average of the other four factor weights.",
+  "weights": {
+    "security_severity": 0.25,
+    "energy_waste": 0.125,
+    "cost_waste": 0.125,
+    "workflow_criticality": 0.125,
+    "environment_type": 0.25,
+    "self_healing_safety": 0.125
+  },
+  "constraints": {
+    "weights_sum_to": 1.0,
+    "elevated_factors": ["security_severity", "environment_type"],
+    "elevated_min_multiplier_of_others_avg": 1.5
+  },
+  "tiebreaker": "earlier_detection_timestamp_ranks_higher",
+  "missing_factor_policy": "redistribute_proportionally_among_available_factors",
+  "severity_thresholds": {
+    "critical": 80,
+    "high": 60,
+    "medium": 30,
+    "low": 0
+  }
+}

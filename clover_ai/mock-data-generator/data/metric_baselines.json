@@ -1,0 +1,61 @@
+{
+  "_comment": "Per-workload trailing-mean baselines (\u00a76.11). thresholds = baseline x multiplier (see rules/*.json).",
+  "baselines": {
+    "wl-field-app-001": {
+      "cost_24h": 76.828,
+      "cost_30d_forecast": 2304.833,
+      "carbon_kgco2e_24h": 23.51,
+      "energy_kwh_24h": 45.219,
+      "error_rate_percent": 0.39
+    },
+    "wl-iot-dashboard-001": {
+      "cost_24h": 66.718,
+      "cost_30d_forecast": 2001.545,
+      "carbon_kgco2e_24h": 20.265,
+      "energy_kwh_24h": 38.846,
+      "error_rate_percent": 0.604
+    },
+    "wl-bim-processor-001": {
+      "cost_24h": 21.378,
+      "cost_30d_forecast": 641.347,
+      "carbon_kgco2e_24h": 8.152,
+      "energy_kwh_24h": 14.39,
+      "error_rate_percent": 0.494
+    },
+    "wl-doc-storage-001": {
+      "cost_24h": 36.221,
+      "cost_30d_forecast": 1086.641,
+      "carbon_kgco2e_24h": 11.592,
+      "energy_kwh_24h": 22.181,
+      "error_rate_percent": 0.097
+    },
+    "wl-report-generator-001": {
+      "cost_24h": 12.118,
+      "cost_30d_forecast": 363.55,
+      "carbon_kgco2e_24h": 3.486,
+      "energy_kwh_24h": 6.02,
+      "error_rate_percent": 0.297
+    },
+    "wl-ci-pipeline-001": {
+      "cost_24h": 10.801,
+      "cost_30d_forecast": 324.036,
+      "carbon_kgco2e_24h": 2.885,
+      "energy_kwh_24h": 4.994,
+      "error_rate_percent": 1.026
+    },
+    "wl-costly-vm-001": {
+      "cost_24h": 84.076,
+      "cost_30d_forecast": 2522.27,
+      "carbon_kgco2e_24h": 26.695,
+      "energy_kwh_24h": 49.257,
+      "error_rate_percent": 0.8
+    },
+    "wl-site-db-001": {
+      "cost_24h": 95.098,
+      "cost_30d_forecast": 2852.943,
+      "carbon_kgco2e_24h": 30.162,
+      "energy_kwh_24h": 58.001,
+      "error_rate_percent": 0.197
+    }
+  }
+}

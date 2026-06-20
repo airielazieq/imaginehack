@@ -1,0 +1,85 @@
+{
+  "_comment": "Workload registry (static metadata). 8 workloads per ARCHITECTURE.md §10.3. Telemetry snapshots live in healthy_telemetry_baseline.json keyed by workload_id.",
+  "workloads": [
+    {
+      "workload_id": "wl-field-app-001",
+      "workload_name": "Field Reporting App API",
+      "workload_type": "Field App",
+      "cloud_service_type": "container",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "owner_team": "Field Operations Platform",
+      "workflow_criticality": "high"
+    },
+    {
+      "workload_id": "wl-iot-dashboard-001",
+      "workload_name": "IoT Monitoring Dashboard",
+      "workload_type": "IoT Dashboard",
+      "cloud_service_type": "container",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "owner_team": "Site Monitoring Team",
+      "workflow_criticality": "high"
+    },
+    {
+      "workload_id": "wl-bim-processor-001",
+      "workload_name": "BIM Processing Engine",
+      "workload_type": "BIM Processing Job",
+      "cloud_service_type": "container",
+      "environment": "development",
+      "region": "ap-southeast-1",
+      "owner_team": "Construction Analytics Team",
+      "workflow_criticality": "medium"
+    },
+    {
+      "workload_id": "wl-doc-storage-001",
+      "workload_name": "Project Document Storage",
+      "workload_type": "Storage",
+      "cloud_service_type": "storage",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "owner_team": "Document Management Team",
+      "workflow_criticality": "critical"
+    },
+    {
+      "workload_id": "wl-report-generator-001",
+      "workload_name": "Monthly Progress Report Generator",
+      "workload_type": "Batch Job",
+      "cloud_service_type": "serverless",
+      "environment": "staging",
+      "region": "ap-southeast-1",
+      "owner_team": "Construction Analytics Team",
+      "workflow_criticality": "medium"
+    },
+    {
+      "workload_id": "wl-ci-pipeline-001",
+      "workload_name": "Deployment CI/CD Pipeline",
+      "workload_type": "Pipeline",
+      "cloud_service_type": "pipeline",
+      "environment": "development",
+      "region": "ap-southeast-1",
+      "owner_team": "Platform Engineering",
+      "workflow_criticality": "medium"
+    },
+    {
+      "workload_id": "wl-costly-vm-001",
+      "workload_name": "Legacy Analytics VM",
+      "workload_type": "VM",
+      "cloud_service_type": "vm",
+      "environment": "testing",
+      "region": "ap-southeast-1",
+      "owner_team": "Construction Analytics Team",
+      "workflow_criticality": "low"
+    },
+    {
+      "workload_id": "wl-site-db-001",
+      "workload_name": "Site Operations Database",
+      "workload_type": "Database",
+      "cloud_service_type": "database",
+      "environment": "production",
+      "region": "ap-southeast-1",
+      "owner_team": "Site Operations Team",
+      "workflow_criticality": "critical"
+    }
+  ]
+}

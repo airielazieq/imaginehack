@@ -1,0 +1,73 @@
+{
+  "policy_name": "safety_rules",
+  "version": "1.0.0",
+  "description": "Authoritative, deterministic safety policy for Module 3 (Guardrailed Self-Healing). The LLM never makes safety or routing decisions. Auto-fix is permitted ONLY when ALL auto_fix_conditions hold. If ANY escalation condition holds, route to human_escalation_required. Otherwise, if ANY approval condition holds, route to user_approval_required. Critical risk_level always escalates. Blocklisted actions never auto-execute.",
+  "evaluation_order": [
+    "blocklist",
+    "escalation_conditions",
+    "approval_conditions",
+    "auto_fix_conditions"
+  ],
+  "auto_fix_conditions": {
+    "description": "ALL of these must evaluate true for an action to be eligible for auto_fix.",
+    "logic": "all",
+    "conditions": [
+      { "id": "non_production", "field": "environment", "operator": "neq", "value": "production" },
+      { "id": "reversible", "field": "action_reversible", "operator": "eq", "value": true },
+      { "id": "no_sensitive_data", "field": "sensitive_data_affected", "operator": "eq", "value": false },
+      { "id": "no_database_affected", "field": "database_affected", "operator": "eq", "value": false },
+      { "id": "no_network_security_policy_change", "field": "network_or_security_policy_modified", "operator": "eq", "value": false },
+      { "id": "criticality_low_or_medium", "field": "workflow_criticality", "operator": "in", "value": ["low", "medium"] },
+      { "id": "rollback_note_exists", "field": "rollback_note", "operator": "exists", "value": true }
+    ]
+  },
+  "approval_conditions": {
+    "description": "If ANY of these hold (and no escalation condition holds), route to user_approval_required.",
+    "logic": "any",
+    "conditions": [
+      { "id": "staging_or_production", "field": "environment", "operator": "in", "value": ["staging", "production"] },
+      { "id": "criticality_high", "field": "workflow_criticality", "operator": "eq", "value": "high" },
+      { "id": "affects_availability", "field": "affects_availability", "operator": "eq", "value": true },
+      { "id": "modifies_config", "field": "modifies_config", "operator": "eq", "value": true },
+      { "id": "changes_access_policy", "field": "changes_access_policy", "operator": "eq", "value": true },
+      { "id": "requires_downtime", "field": "requires_downtime", "operator": "eq", "value": true },
+      { "id": "reversible_but_sensitive", "field": "reversible_but_sensitive", "operator": "eq", "value": true }
+    ]
+  },
+  "escalation_conditions": {
+    "description": "If ANY of these hold, route to human_escalation_required regardless of other conditions.",
+    "logic": "any",
+    "conditions": [
+      { "id": "critical_production_vulnerability", "field": "critical_production_vulnerability", "operator": "eq", "value": true },
+      { "id": "sensitive_data_exposure", "field": "sensitive_data_affected", "operator": "eq", "value": true },
+      { "id": "production_database_affected", "field": "production_database_affected", "operator": "eq", "value": true },
+      { "id": "unknown_dependency", "field": "unknown_dependency", "operator": "eq", "value": true },
+      { "id": "may_cause_major_downtime", "field": "may_cause_major_downtime", "operator": "eq", "value": true },
+      { "id": "irreversible_action", "field": "action_reversible", "operator": "eq", "value": false },
+      { "id": "data_deletion", "field": "deletes_data", "operator": "eq", "value": true },
+      { "id": "critical_network_security_policy", "field": "critical_network_or_security_policy", "operator": "eq", "value": true },
+      { "id": "low_ai_confidence", "field": "ai_confidence", "operator": "lt", "value": 0.5 },
+      { "id": "risk_level_critical", "field": "risk_level", "operator": "eq", "value": "critical" }
+    ]
+  },
+  "blocklist": {
+    "description": "Actions that must NEVER auto-execute under any circumstances. These always require human escalation.",
+    "actions": [
+      "delete_data",
+      "modify_production_database",
+      "patch_critical_production_system",
+      "change_production_security_policy",
+      "change_production_network_policy",
+      "irreversible_infrastructure_change",
+      "act_under_unknown_dependency",
+      "act_under_low_confidence"
+    ]
+  },
+  "timers": {
+    "verification_timeout_seconds": 30,
+    "rollback_timeout_seconds": 60,
+    "runbook_timeout_seconds": 120,
+    "approval_escalation_timeout_minutes": 15,
+    "snooze_default_minutes": 30
+  }
+}

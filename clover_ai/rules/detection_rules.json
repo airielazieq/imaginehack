@@ -1,0 +1,82 @@
+{
+  "_comment": "Issue-classification rules for Module 1 (ARCHITECTURE.md §5.5.2). Thresholds follow §6.11: threshold(workload, metric) = baseline(workload, metric) x multiplier(metric). Baselines live in mock-data-generator/data/metric_baselines.json (data-derived, refreshed as telemetry arrives). Multipliers below are domain-expert-set sensitivity factors (stable until revisited). Absolute floors guard workloads with tiny baselines.",
+  "version": 1,
+  "multipliers": {
+    "cost_30d_forecast": 1.5,
+    "cost_24h": 1.5,
+    "carbon_kgco2e_24h": 2.0,
+    "energy_kwh_24h": 2.0,
+    "error_rate_percent": 2.5
+  },
+  "absolute_floors": {
+    "cost_30d_forecast": 900.0,
+    "carbon_kgco2e_24h": 15.0,
+    "error_rate_percent": 2.0,
+    "idle_cpu_usage_percent": 10.0,
+    "idle_runtime_hours_24h": 20.0,
+    "low_utilization_cpu_percent": 20.0
+  },
+  "rules": [
+    {
+      "rule_id": "DET-SEC-001",
+      "issue_type": "critical_exposed_vulnerability",
+      "issue_category": "security",
+      "description": "Publicly exposed workload with a critical vulnerability.",
+      "conditions": ["public_exposure == true", "vulnerability_severity == critical"]
+    },
+    {
+      "rule_id": "DET-SEC-002",
+      "issue_type": "public_storage",
+      "issue_category": "security",
+      "description": "Storage object/bucket is publicly accessible.",
+      "conditions": ["public_storage == true"]
+    },
+    {
+      "rule_id": "DET-COST-ENERGY-001",
+      "issue_type": "idle_or_overprovisioned_workload",
+      "issue_category": "cost_energy_carbon",
+      "description": "Non-production workload running continuously with very low CPU.",
+      "conditions": [
+        "cpu_usage_percent < idle_cpu_usage_percent",
+        "runtime_hours_24h >= idle_runtime_hours_24h",
+        "environment in [development, testing, staging]",
+        "cost_30d_forecast > threshold(cost_30d_forecast)"
+      ]
+    },
+    {
+      "rule_id": "DET-CARBON-001",
+      "issue_type": "carbon_heavy_workload",
+      "issue_category": "carbon",
+      "description": "Batch/reporting/BIM workload with elevated carbon emissions.",
+      "conditions": [
+        "workload_type in [Batch Job, BIM Processing Job, Storage]",
+        "carbon_kgco2e_24h > threshold(carbon_kgco2e_24h)",
+        "workflow_criticality in [low, medium]"
+      ]
+    },
+    {
+      "rule_id": "DET-MON-001",
+      "issue_type": "no_monitoring",
+      "issue_category": "monitoring",
+      "description": "Monitoring/observability is disabled for the workload.",
+      "conditions": ["monitoring_enabled == false"]
+    },
+    {
+      "rule_id": "DET-PERF-001",
+      "issue_type": "high_error_rate",
+      "issue_category": "performance",
+      "description": "Error rate is elevated above the workload baseline.",
+      "conditions": ["error_rate_percent > threshold(error_rate_percent)"]
+    },
+    {
+      "rule_id": "DET-COST-001",
+      "issue_type": "cost_spike_or_waste",
+      "issue_category": "cost",
+      "description": "Projected cost is elevated while utilization is low/moderate.",
+      "conditions": [
+        "cost_30d_forecast > threshold(cost_30d_forecast)",
+        "cpu_usage_percent < low_utilization_cpu_percent"
+      ]
+    }
+  ]
+}

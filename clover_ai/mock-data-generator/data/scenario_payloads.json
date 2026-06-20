@@ -1,0 +1,135 @@
+{
+  "_comment": "Demo scenario telemetry patches (ARCHITECTURE.md §10.5). Each is applied on top of the workload's healthy baseline to flip it into an anomalous state. 'expected' fields are used by tests/validate_scenarios.py to confirm the deterministic pipeline still fires the intended issue/severity/execution_mode after data-derived thresholds (§6.11).",
+  "scenarios": [
+    {
+      "scenario_id": "trigger_idle_dev_server",
+      "title": "Idle Development Server",
+      "target_workload": "wl-bim-processor-001",
+      "patch": {
+        "cpu_usage_percent": 3.2,
+        "memory_usage_percent": 18.5,
+        "runtime_hours_24h": 24,
+        "request_count_24h": 120,
+        "cost_24h": 57.6,
+        "cost_30d_forecast": 1728.0,
+        "energy_kwh_24h": 38.5,
+        "carbon_kgco2e_24h": 21.7,
+        "environment": "development",
+        "workflow_criticality": "medium",
+        "monitoring_enabled": true
+      },
+      "expected": {
+        "issue_type": "idle_or_overprovisioned_workload",
+        "issue_category": "cost_energy_carbon",
+        "severity": "medium",
+        "execution_mode": "auto_fix"
+      }
+    },
+    {
+      "scenario_id": "trigger_public_storage_exposure",
+      "title": "Public Storage Exposure",
+      "target_workload": "wl-doc-storage-001",
+      "patch": {
+        "cloud_service_type": "storage",
+        "environment": "production",
+        "workflow_criticality": "critical",
+        "public_storage": true,
+        "public_exposure": true,
+        "vulnerability_severity": "high",
+        "critical_vulnerability_count": 0,
+        "access_anomaly_detected": true,
+        "monitoring_enabled": true
+      },
+      "expected": {
+        "issue_type": "public_storage",
+        "issue_category": "security",
+        "severity": "critical",
+        "execution_mode": "human_escalation_required"
+      }
+    },
+    {
+      "scenario_id": "trigger_critical_production_vulnerability",
+      "title": "Critical Production Vulnerability",
+      "target_workload": "wl-field-app-001",
+      "patch": {
+        "environment": "production",
+        "workflow_criticality": "high",
+        "public_exposure": true,
+        "vulnerability_severity": "critical",
+        "critical_vulnerability_count": 2,
+        "access_anomaly_detected": false,
+        "error_rate_percent": 1.2
+      },
+      "expected": {
+        "issue_type": "critical_exposed_vulnerability",
+        "issue_category": "security",
+        "severity": "critical",
+        "execution_mode": "human_escalation_required"
+      }
+    },
+    {
+      "scenario_id": "trigger_carbon_heavy_batch_job",
+      "title": "Carbon-Heavy Batch Job",
+      "target_workload": "wl-report-generator-001",
+      "patch": {
+        "workload_type": "Batch Job",
+        "environment": "staging",
+        "workflow_criticality": "medium",
+        "cpu_usage_percent": 78.0,
+        "runtime_hours_24h": 14,
+        "energy_kwh_24h": 95.0,
+        "carbon_kgco2e_24h": 61.0,
+        "carbon_intensity_gco2_per_kwh": 642,
+        "cost_24h": 120.0,
+        "cost_30d_forecast": 3600.0
+      },
+      "expected": {
+        "issue_type": "carbon_heavy_workload",
+        "issue_category": "carbon",
+        "severity": "medium",
+        "execution_mode": "user_approval_required"
+      }
+    },
+    {
+      "scenario_id": "trigger_missing_monitoring",
+      "title": "Missing Monitoring",
+      "target_workload": "wl-ci-pipeline-001",
+      "patch": {
+        "monitoring_enabled": false,
+        "environment": "development",
+        "workflow_criticality": "medium",
+        "error_rate_percent": 2.5,
+        "public_exposure": false,
+        "vulnerability_severity": "none"
+      },
+      "expected": {
+        "issue_type": "no_monitoring",
+        "issue_category": "monitoring",
+        "severity": "medium",
+        "execution_mode": "auto_fix"
+      }
+    },
+    {
+      "scenario_id": "trigger_cost_spike",
+      "title": "Cost Spike",
+      "target_workload": "wl-costly-vm-001",
+      "patch": {
+        "environment": "testing",
+        "workflow_criticality": "low",
+        "cpu_usage_percent": 15.0,
+        "memory_usage_percent": 22.0,
+        "runtime_hours_24h": 24,
+        "cost_24h": 180.0,
+        "cost_30d_forecast": 5400.0,
+        "energy_kwh_24h": 110.0,
+        "carbon_kgco2e_24h": 60.0
+      },
+      "expected": {
+        "issue_type": "cost_spike_or_waste",
+        "issue_category": "cost",
+        "severity": "medium",
+        "execution_mode": "auto_fix"
+      }
+    }
+  ]
+}
