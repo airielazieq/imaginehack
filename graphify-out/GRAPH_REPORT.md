@@ -1,16 +1,16 @@
 # Graph Report - ImagineHack  (2026-06-20)
 
 ## Corpus Check
-- 197 files · ~113,240 words
+- 284 files · ~179,782 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1918 nodes · 3118 edges · 142 communities (131 shown, 11 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 331 edges (avg confidence: 0.51)
+- 3299 nodes · 5814 edges · 203 communities (188 shown, 15 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 453 edges (avg confidence: 0.51)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fd479b94`
+- Built from commit: `d61d856f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -142,45 +142,115 @@
 - [[_COMMUNITY_Community 125|Community 125]]
 - [[_COMMUNITY_Community 126|Community 126]]
 - [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 147|Community 147]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
+- [[_COMMUNITY_Community 150|Community 150]]
+- [[_COMMUNITY_Community 151|Community 151]]
+- [[_COMMUNITY_Community 152|Community 152]]
+- [[_COMMUNITY_Community 153|Community 153]]
+- [[_COMMUNITY_Community 154|Community 154]]
+- [[_COMMUNITY_Community 155|Community 155]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
+- [[_COMMUNITY_Community 158|Community 158]]
+- [[_COMMUNITY_Community 159|Community 159]]
+- [[_COMMUNITY_Community 160|Community 160]]
+- [[_COMMUNITY_Community 161|Community 161]]
+- [[_COMMUNITY_Community 162|Community 162]]
+- [[_COMMUNITY_Community 163|Community 163]]
+- [[_COMMUNITY_Community 164|Community 164]]
+- [[_COMMUNITY_Community 165|Community 165]]
+- [[_COMMUNITY_Community 166|Community 166]]
+- [[_COMMUNITY_Community 167|Community 167]]
+- [[_COMMUNITY_Community 168|Community 168]]
+- [[_COMMUNITY_Community 169|Community 169]]
+- [[_COMMUNITY_Community 170|Community 170]]
+- [[_COMMUNITY_Community 171|Community 171]]
+- [[_COMMUNITY_Community 172|Community 172]]
+- [[_COMMUNITY_Community 173|Community 173]]
+- [[_COMMUNITY_Community 174|Community 174]]
+- [[_COMMUNITY_Community 175|Community 175]]
+- [[_COMMUNITY_Community 176|Community 176]]
+- [[_COMMUNITY_Community 177|Community 177]]
+- [[_COMMUNITY_Community 178|Community 178]]
+- [[_COMMUNITY_Community 179|Community 179]]
+- [[_COMMUNITY_Community 180|Community 180]]
+- [[_COMMUNITY_Community 181|Community 181]]
+- [[_COMMUNITY_Community 182|Community 182]]
+- [[_COMMUNITY_Community 183|Community 183]]
+- [[_COMMUNITY_Community 184|Community 184]]
+- [[_COMMUNITY_Community 185|Community 185]]
+- [[_COMMUNITY_Community 186|Community 186]]
+- [[_COMMUNITY_Community 187|Community 187]]
+- [[_COMMUNITY_Community 188|Community 188]]
+- [[_COMMUNITY_Community 189|Community 189]]
+- [[_COMMUNITY_Community 190|Community 190]]
+- [[_COMMUNITY_Community 191|Community 191]]
+- [[_COMMUNITY_Community 192|Community 192]]
+- [[_COMMUNITY_Community 193|Community 193]]
+- [[_COMMUNITY_Community 194|Community 194]]
+- [[_COMMUNITY_Community 195|Community 195]]
+- [[_COMMUNITY_Community 196|Community 196]]
+- [[_COMMUNITY_Community 197|Community 197]]
+- [[_COMMUNITY_Community 198|Community 198]]
+- [[_COMMUNITY_Community 199|Community 199]]
+- [[_COMMUNITY_Community 200|Community 200]]
+- [[_COMMUNITY_Community 201|Community 201]]
+- [[_COMMUNITY_Community 202|Community 202]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Workload` - 83 edges
-2. `TelemetrySnapshot` - 58 edges
-3. `TelemetrySnapshot` - 44 edges
-4. `Issue` - 37 edges
-5. `connection()` - 35 edges
-6. `IsolationForestDetector` - 35 edges
-7. `XAIExplanation` - 34 edges
-8. `MLResult` - 31 edges
-9. `MockDataService` - 28 edges
-10. `Event` - 27 edges
+2. `connection()` - 59 edges
+3. `TelemetrySnapshot` - 58 edges
+4. `TelemetrySnapshot` - 44 edges
+5. `ConnectorRegistry` - 37 edges
+6. `Issue` - 37 edges
+7. `IsolationForestDetector` - 35 edges
+8. `XAIExplanation` - 34 edges
+9. `init_db()` - 32 edges
+10. `NotificationConnector` - 31 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `TelemetrySnapshot` --uses--> `TelemetrySnapshot`  [INFERRED]
-  backend/services/telemetry_service.py → backend/api/telemetry.py
 - `build_app()` --calls--> `FastAPI`  [INFERRED]
   clover_ai/mock_api.py → backend/main.py
-- `main()` --calls--> `IsolationForest`  [INFERRED]
-  clover_ai/ml/isolation_forest/train.py → backend/ml/train_isolation_forest.py
-- `main()` --calls--> `XGBRegressor`  [INFERRED]
-  clover_ai/ml/xgboost_forecast/train.py → backend/ml/train_xgboost.py
-- `Recommendation` --uses--> `Recommendation`  [INFERRED]
-  backend/services/recommendation_service.py → backend/schemas/recommendation.py
+- `Alert` --uses--> `Alert`  [INFERRED]
+  backend/modules/alerts/suppression.py → backend/schemas/alert.py
+- `Any` --uses--> `MetricTrend`  [INFERRED]
+  backend/modules/downtime_prediction/predictor.py → backend/modules/downtime_prediction/timeline.py
+- `Recommendation` --uses--> `RunbookExecutionResult`  [INFERRED]
+  backend/tests/test_runbook_executor.py → backend/modules/self_healing/runbook_executor.py
+- `TelemetrySnapshot` --uses--> `TelemetrySnapshot`  [INFERRED]
+  backend/services/telemetry_service.py → backend/api/telemetry.py
 
 ## Import Cycles
 - 1-file cycle: `backend/main.py -> backend/main.py`
+- 1-file cycle: `backend/services/audit_service.py -> backend/services/audit_service.py`
+- 1-file cycle: `backend/modules/scoring/priority_scorer.py -> backend/modules/scoring/priority_scorer.py`
 - 1-file cycle: `backend/services/issue_service.py -> backend/services/issue_service.py`
-- 1-file cycle: `backend/core/event_bus.py -> backend/core/event_bus.py`
+- 1-file cycle: `backend/services/mcp_log_service.py -> backend/services/mcp_log_service.py`
+- 1-file cycle: `backend/modules/self_healing/report_generator.py -> backend/modules/self_healing/report_generator.py`
+- 1-file cycle: `backend/connectors/audit_connector.py -> backend/connectors/audit_connector.py`
+- 1-file cycle: `backend/modules/alerts/alert_engine.py -> backend/modules/alerts/alert_engine.py`
+- 1-file cycle: `backend/modules/alerts/delivery.py -> backend/modules/alerts/delivery.py`
 - 1-file cycle: `backend/tests/test_detection_api.py -> backend/tests/test_detection_api.py`
 - 1-file cycle: `backend/tests/test_workloads_api.py -> backend/tests/test_workloads_api.py`
+- 1-file cycle: `backend/modules/alerts/suppression.py -> backend/modules/alerts/suppression.py`
+- 1-file cycle: `backend/tests/test_alert_delivery_sla.py -> backend/tests/test_alert_delivery_sla.py`
 - 1-file cycle: `backend/modules/next_best_action/nba_engine.py -> backend/modules/next_best_action/nba_engine.py`
+- 1-file cycle: `backend/tests/test_priority_scorer_full.py -> backend/tests/test_priority_scorer_full.py`
+- 1-file cycle: `backend/modules/self_healing/approval_queue.py -> backend/modules/self_healing/approval_queue.py`
+- 1-file cycle: `backend/core/event_bus.py -> backend/core/event_bus.py`
 - 1-file cycle: `backend/services/mock_data_service.py -> backend/services/mock_data_service.py`
-- 2-file cycle: `backend/api/mock_controller.py -> backend/main.py -> backend/api/mock_controller.py`
-- 2-file cycle: `backend/api/detection.py -> backend/main.py -> backend/api/detection.py`
-- 2-file cycle: `backend/api/telemetry.py -> backend/main.py -> backend/api/telemetry.py`
-- 2-file cycle: `backend/api/workloads.py -> backend/main.py -> backend/api/workloads.py`
+- 2-file cycle: `backend/api/mcp_log.py -> backend/main.py -> backend/api/mcp_log.py`
+- 2-file cycle: `backend/api/recommendations.py -> backend/main.py -> backend/api/recommendations.py`
 
-## Communities (142 total, 11 thin omitted)
+## Communities (203 total, 15 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.12
@@ -248,15 +318,15 @@ Nodes (4): Engineering principle, Locked reconciliation decisions (2026-06-20), 
 
 ### Community 16 - "Community 16"
 Cohesion: 0.09
-Nodes (64): bulk_ingest_telemetry(), _emit_ingested(), ingest_telemetry(), Telemetry ingestion API (Module 1 entry point).  Exposes two endpoints:  - `, Emit a TELEMETRY_INGESTED event to trigger the detection pipeline., Ingest a single telemetry snapshot.      Validation is handled by FastAPI/Pyda, Ingest a list of telemetry snapshots.      Each snapshot is validated by Pydan, TelemetrySnapshot (+56 more)
+Nodes (48): bulk_ingest_telemetry(), _emit_ingested(), ingest_telemetry(), Telemetry ingestion API (Module 1 entry point).  Exposes two endpoints:  - `, Emit a TELEMETRY_INGESTED event to trigger the detection pipeline., Ingest a single telemetry snapshot.      Validation is handled by FastAPI/Pyda, Ingest a list of telemetry snapshots.      Each snapshot is validated by Pydan, TelemetrySnapshot (+40 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.06
-Nodes (60): Any, Path, Any, Any, RuleMatch, load_json_config(), load_policy(), Load and parse a JSON config file.      Raises:         FileNotFoundError: if (+52 more)
+Nodes (56): Any, Any, RuleMatch, load_policy(), Load a named JSON policy file from ``backend/rules/``.      ``name`` may be gi, Module 1: Detection & Insight.  Subcomponents:   - rule_classifier: rule-base, build_context(), classify() (+48 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.08
-Nodes (55): Any, IsolationForestDetector, TelemetrySnapshot, Workload, XAIExplanation, Workload, IsolationForestDetector, TelemetrySnapshot (+47 more)
+Cohesion: 0.10
+Nodes (45): TelemetrySnapshot, Workload, XAIExplanation, IsolationForestDetector, TelemetrySnapshot, _compute_shap_values(), _deviation(), explain() (+37 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.04
@@ -268,51 +338,51 @@ Nodes (47): _evidence_item_to_phrase(), format_evidence(), generate_explanation(
 
 ### Community 21 - "Community 21"
 Cohesion: 0.06
-Nodes (27): Any, datetime, MockDataService, Mock data generator and controller service (task 2.2).  This service is the en, Return healthy baseline telemetry keyed by ``workload_id``., Return scenarios keyed by ``scenario_id``., Persist a snapshot and emit ``TELEMETRY_INGESTED``.          Mirrors ``api/tel, Upsert all sample workloads. Returns the seeded workload ids.          Synchro (+19 more)
+Nodes (31): Any, Path, Any, datetime, load_json_config(), Load and parse a JSON config file.      Raises:         FileNotFoundError: if, MockDataService, Mock data generator and controller service (task 2.2).  This service is the en (+23 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.08
-Nodes (36): ForecastModelResult, Path, TelemetrySnapshot, Workload, ForecastModelResult, TelemetrySnapshot, Workload, forecast_snapshot() (+28 more)
+Cohesion: 0.07
+Nodes (38): DataFrame, Path, ForecastModelResult, TelemetrySnapshot, Workload, load_training_frame(), main(), _make_regressor() (+30 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.08
-Nodes (44): get(), post(), approveRecommendation(), AuditLogFilters, bulkIngestTelemetry(), CompositeHeatmapCell, DashboardSummary, denyApproval() (+36 more)
+Cohesion: 0.06
+Nodes (45): get(), patch(), post(), approveRecommendation(), bulkIngestTelemetry(), CompositeHeatmapResponse, denyApproval(), evaluateRemediation() (+37 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.07
-Nodes (36): BaseModel, Alert, Pydantic schema for Alert., Threshold-based alert with suppression / retry / SLA metadata., error(), ErrorResponse, Standard API response envelope wrappers.  All API responses use one of two con, Envelope for a successful API response. (+28 more)
+Nodes (47): MLResult, Issue, Workload, BaseModel, _consolidate(), Merge a new detection into an existing open issue (max severity wins)., EstimatedImpact, error() (+39 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.09
-Nodes (36): DataFrame, Path, IsolationForestDetector, TelemetrySnapshot, Expose the feature builder on the detector for SHAP reuse., main(), Train and freeze the Isolation Forest anomaly detector (ARCHITECTURE.md §5.5.1,, IsolationForest (+28 more)
+Cohesion: 0.08
+Nodes (35): Any, Path, IsolationForestDetector, IsolationForestDetector, TelemetrySnapshot, Workload, Workload, XAIExplanation (+27 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.13
-Nodes (36): datetime, ForecastModelResult, OptimizationImpactForecast, Recommendation, OptimizationImpactForecast, FactorValue, Module 2: Next Best Action.  Subcomponents:   - nba_engine: rule-based recomm, assemble_recommendation() (+28 more)
+Cohesion: 0.18
+Nodes (19): ForecastModelResult, Issue, OptimizationImpactForecast, Recommendation, NBAEngine, _neutral_forecast(), Return a clearly-labelled placeholder forecast.      Tasks 4.2 (XGBoost foreca, Produce exactly one :class:`Recommendation` for an Issue.      When ``forecast (+11 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.08
-Nodes (14): CloverMark(), CloverMarkProps, Header(), HeaderProps, Layout(), NAV, NavItem, Sidebar() (+6 more)
+Cohesion: 0.10
+Nodes (19): generateRecommendation(), getRecommendation(), HeatmapToggleProps, HeatmapView, OPTIONS, ViewOption, WebSocketProvider(), EXECUTION_MODE (+11 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.10
-Nodes (33): OptimizationImpactForecast, FactorMap, _clamp(), compute_optimization_impact(), _dimension_savings(), get_optimization_factors(), Optimization Impact Calculator (Module 2, task 4.3).  Given a baseline 30-day, Return ``(after, savings)`` for one dimension given a retained factor.      `` (+25 more)
+Cohesion: 0.14
+Nodes (20): OptimizationImpactForecast, _assert_consistent_and_non_negative(), _dimension_triples(), Tests for the Optimization Impact Calculator (task 4.3).  Covers the two corre, A zero baseline forecast produces zero after/savings on every dimension., Lower retained factor (range min) yields larger savings than range max., Explicit factors are used; a factor > 1 is clamped to 1.0 (no savings)., For any type and non-negative baseline: consistent, non-negative savings. (+12 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.08
 Nodes (27): _enc(), _enc_bool(), encode_telemetry(), Feature definitions and deterministic categorical encoders.  Single source of tr, Build an ordered numeric feature vector for the given feature list.     Missing, Augment a raw telemetry dict with all *_encoded fields. Non-destructive., to_feature_row(), explain() (+19 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.11
-Nodes (28): TelemetrySnapshot, _carbon_heavy(), _clear_issues(), consolidation_sequence(), _cost_spike(), _critical_vuln(), _f(), _healthy_base() (+20 more)
+Cohesion: 0.12
+Nodes (25): _carbon_heavy(), _clear_issues(), consolidation_sequence(), _cost_spike(), _critical_vuln(), _f(), _healthy_base(), _high_error_rate() (+17 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.07
 Nodes (26): dependencies, axios, lucide-react, react, react-dom, react-router-dom, recharts, description (+18 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.12
-Nodes (25): datetime, Issue, connection(), Context manager yielding a connection, committing on success.      Rolls back, create_issue(), find_open_issue(), get_issue(), list_issues() (+17 more)
+Cohesion: 0.11
+Nodes (23): datetime, Issue, create_issue(), find_open_issue(), get_issue(), list_issues(), max_severity(), _parse_dt() (+15 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.10
@@ -323,16 +393,16 @@ Cohesion: 0.08
 Nodes (23): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+15 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.12
-Nodes (21): get_status(), list_scenarios(), Mock controller API (task 2.3).  Exposes demo-control endpoints backed by the, List the available demo scenarios (telemetry payload withheld)., Trigger a demo scenario, injecting its engineered telemetry snapshot.      Ret, Reset every workload to its healthy baseline and clear demo state., Start the continuous telemetry stream (no-op if already running)., Stop the continuous telemetry stream (no-op if not running). (+13 more)
+Cohesion: 0.03
+Nodes (78): list_alerts(), Alerts API (task 16.2).  Exposes the read endpoint over the Alert System's gen, List alerts (most recent first), filtered by the given params., approve_approval(), deny_approval(), list_approvals(), Approval queue API (task 5.4).  Exposes the global remediation approval queue, Return the global approval queue sorted by severity (Critical first). (+70 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.13
-Nodes (19): Any, MLResult, TelemetrySnapshot, Workload, Workload, Workload, TelemetrySnapshot, Workload (+11 more)
+Cohesion: 0.20
+Nodes (12): MLResult, TelemetrySnapshot, Workload, build_feature_vector(), get_detector(), Isolation Forest anomaly detection (task 3.2).  This module owns three respons, Build the ordered 17-element feature vector for a single observation.      Num, Produce an ``MLResult`` (anomaly_score + is_anomaly) for one snapshot. (+4 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.11
-Nodes (12): apiClient, ApiError, patch(), getWorkload(), getWorkloads(), updateIssueStatus(), FetchState, ApiResponse (+4 more)
+Cohesion: 0.08
+Nodes (18): apiClient, ComparisonCardProps, METRIC_ROWS, MetricRow, OptimizationForecastProps, TONE_STYLES, VALUE_STYLES, SavingsBadgeProps (+10 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.11
@@ -359,16 +429,16 @@ Cohesion: 0.13
 Nodes (18): assess(), assess_risk(), _more_restrictive(), _policy_baseline_mode(), Risk level + execution mode assignment for Module 2 (Next Best Action).  This, Return whichever execution mode is the more restrictive of the two., Compute the risk level for a recommendation.      Args:         environment:, Select the required execution mode from risk + the rule policy baseline. (+10 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.18
-Nodes (17): Any, Issue, _build_context(), build_draft(), _compare(), match_rule(), _matched_conditions(), Merge workload, the Issue's detected_evidence, and telemetry into one map. (+9 more)
+Cohesion: 0.12
+Nodes (30): Any, datetime, Module 2: Next Best Action.  Subcomponents:   - nba_engine: rule-based recomm, assemble_recommendation(), _build_context(), build_draft(), _compare(), _default_explanation() (+22 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.18
-Nodes (16): _error_response(), health_check(), http_exception_handler(), FastAPI application entry point for the Clover Cloud Intelligence Platform.  W, Map HTTP exceptions to the structured error envelope., Catch-all: log traceback and return a generic 500 envelope., Lightweight liveness probe., Build a standardized error envelope response. (+8 more)
+Cohesion: 0.22
+Nodes (13): _error_response(), http_exception_handler(), Exception, Build a standardized error envelope response., Return HTTP 422 with the structured VALIDATION_ERROR envelope., Map HTTP exceptions to the structured error envelope., Catch-all: log traceback and return a generic 500 envelope., unhandled_exception_handler() (+5 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.18
-Nodes (15): DataFrame, Path, load_training_frame(), main(), _make_regressor(), Train the XGBoost 30-day forecasters (task 4.2).  Reads ``backend/mock_data/tr, Fit one XGBRegressor per target on the 17 canonical features., Serialize the 3 models + feature-order metadata bundle via joblib. (+7 more)
+Cohesion: 0.06
+Nodes (70): Any, ConnectorRegistry, datetime, MCPToolExecution, RemediationResult, Any, RemediationContext, SafetyDecision (+62 more)
 
 ### Community 47 - "Community 47"
 Cohesion: 0.12
@@ -379,20 +449,20 @@ Cohesion: 0.12
 Nodes (17): Correctness Properties, Property 10: Approval Queue Ordering, Property 11: Priority Score Computation, Property 12: Dimension Score State Mapping, Property 13: Alert Generation and Suppression, Property 14: Downtime Prediction Output Completeness, Property 15: Audit Log on State Transitions, Property 16: API Error Response Structure (+9 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.14
-Nodes (13): Connection, clear_policy_cache(), get_settings(), Configuration and JSON policy loading.  Centralizes application settings and t, Runtime settings sourced from environment variables with defaults., Return the cached application settings singleton., Clear the cached policy files (useful in tests or after hot edits)., Settings (+5 more)
+Cohesion: 0.05
+Nodes (48): ApprovalQueue, ApprovalStatus, datetime, Recommendation, Recommendation, ApprovalItem, ApprovalQueue, InvalidTransition (+40 more)
 
 ### Community 50 - "Community 50"
 Cohesion: 0.12
 Nodes (16): 8.10 Optimization Impact Forecast, 8.11 Optimization Factors (canonical table), 8.12 Forecast Output Example, 8.13 Fallback Strategy, 8.14 Model Training Cadence: Frozen During Demo, 8.15 Acceptance Criteria, 8.1 Chosen Stack, 8.2 Why Isolation Forest (+8 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.14
-Nodes (8): lifespan(), Application lifespan: startup initialization and graceful shutdown., build_app(), _load_controller_class(), Mock Data Controller API — integration surface for the SE backend.  Exposes the, Load controllers/controller.py by path (hyphenated dir isn't importable)., Standalone app for local testing., FastAPI
+Cohesion: 0.17
+Nodes (5): build_app(), _load_controller_class(), Mock Data Controller API — integration surface for the SE backend.  Exposes the, Load controllers/controller.py by path (hyphenated dir isn't importable)., Standalone app for local testing.
 
 ### Community 52 - "Community 52"
-Cohesion: 0.27
-Nodes (14): TelemetrySnapshot, A single point-in-time telemetry reading for a workload.      Numeric bounds (, TelemetrySnapshot, _load_json(), _make_issue(), Tests for the rule-based Next Best Action engine + risk assessor (task 4.1)., Req 5.1: exactly one Recommendation per Issue, with valid risk + mode., Synthesise an Issue mirroring what Module 1 would emit for a scenario. (+6 more)
+Cohesion: 0.22
+Nodes (15): TelemetrySnapshot, Pydantic schema for TelemetrySnapshot (Module 1 input).  Bounds are enforced o, A single point-in-time telemetry reading for a workload.      Numeric bounds (, TelemetrySnapshot, _load_json(), _make_issue(), Tests for the rule-based Next Best Action engine + risk assessor (task 4.1)., Req 5.1: exactly one Recommendation per Issue, with valid risk + mode. (+7 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.13
@@ -403,16 +473,16 @@ Cohesion: 0.18
 Nodes (5): _load_generator(), MockController, Stateful mock data controller (ARCHITECTURE.md §10.2, §10.6, §10.7).  Owns: whic, Load streams/generator.py by path. The 'mock-data-generator' directory     conta, §10.7: clear active scenarios and push healthy telemetry for all.
 
 ### Community 55 - "Community 55"
-Cohesion: 0.14
-Nodes (7): init_db(), Create all tables and indexes if they do not already exist., Insert the test workloads so the issues FK constraint is satisfied., _seed_workloads(), Tests for the mock data service (task 2.2).  Covers Requirements 19.2 (scenari, _schema(), service()
+Cohesion: 0.06
+Nodes (38): datetime, TelemetrySnapshot, Connection, Insert an audit entry into the ``audit_logs`` table., get_settings(), Return the cached application settings singleton., connection(), execute_with_retry() (+30 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.15
-Nodes (13): get_issue(), list_issues(), patch_issue_status(), Detection & Issues API (task 3.5).  Exposes the Module 1 detection endpoints a, Return a single issue by id, or HTTP 404 if it does not exist., Update an issue's status, or HTTP 404 if the issue does not exist., Request body for a status transition., Run detection across every workload's latest telemetry. (+5 more)
+Cohesion: 0.05
+Nodes (60): datetime, Event, PriorityScore, TelemetrySnapshot, _aggregate(), _clamp01(), compute_for_workload(), _derive_cost_waste() (+52 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.18
-Nodes (5): datetime, client(), _make_snapshot(), Tests for the workloads API (task 1.6).  Covers Requirement 21.1 (workloads en, TestClient with lifespan active (creates schema in the temp DB).
+Cohesion: 0.09
+Nodes (29): Any, ForecastModelResult, Path, TelemetrySnapshot, Workload, TelemetrySnapshot, Workload, Workload (+21 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.14
@@ -427,12 +497,12 @@ Cohesion: 0.19
 Nodes (10): apply_scenario(), get_baseline(), get_scenario(), load_baselines(), load_scenarios(), Loaders for the static data deliverables. Everything reads from the JSON files i, Returns {workload_id: full_telemetry_dict}., Return baseline telemetry for a workload with a scenario patch applied. (+2 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.21
-Nodes (10): clamp(), DIMENSION_STATE_COLORS, dimensionScoreColor(), dimensionStateFromScore(), priorityScoreColor(), SEVERITY_COLORS, severityFromScore(), DIMENSION_THRESHOLDS (+2 more)
+Cohesion: 0.13
+Nodes (16): clamp(), DIMENSION_STATE_COLORS, dimensionScoreColor(), dimensionStateFromScore(), priorityScoreColor(), SEVERITY_COLORS, severityFromScore(), DIMENSION_THRESHOLDS (+8 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.23
-Nodes (13): client(), Tests for the telemetry ingestion API (task 1.5).  Covers Requirements 1.1-1.4, Build a fully-valid TelemetrySnapshot payload dict., Insert a minimal workload row so telemetry FK constraints are satisfied., TestClient with lifespan active (creates schema in the temp DB).      Seeds th, _seed_workload(), _telemetry_row_count(), test_bulk_ingest_many_workloads() (+5 more)
+Cohesion: 0.13
+Nodes (18): clear_policy_cache(), Configuration and JSON policy loading.  Centralizes application settings and t, Runtime settings sourced from environment variables with defaults., Clear the cached policy files (useful in tests or after hot edits)., Settings, client(), Tests for the telemetry ingestion API (task 1.5).  Covers Requirements 1.1-1.4, Build a fully-valid TelemetrySnapshot payload dict. (+10 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.24
@@ -443,20 +513,20 @@ Cohesion: 0.19
 Nodes (12): Recommendation, create_recommendation(), get_latest_for_issue(), get_recommendation(), list_recommendations(), Recommendation persistence and query service (task 4.4).  Centralizes read/wri, Return recommendations matching the optional filters, newest first., Return the most recent recommendation for an issue, or ``None``.      Used by (+4 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.18
-Nodes (12): Workload, get_workload(), list_workloads(), Workload persistence service (CRUD).  Encapsulates read/write access to the ``, Return all workloads as a list of dicts, ordered by id., Return ``True`` if a workload with the given id exists., Reconstruct a workload dict from a DB row.      Prefers the full JSON ``data``, Insert or update a workload, returning its id.      Existing rows (matched by (+4 more)
+Cohesion: 0.09
+Nodes (13): Workload, get_workload(), list_workloads(), Workload persistence service (CRUD).  Encapsulates read/write access to the ``, Return all workloads as a list of dicts, ordered by id., Return ``True`` if a workload with the given id exists., Reconstruct a workload dict from a DB row.      Prefers the full JSON ``data``, Insert or update a workload, returning its id.      Existing rows (matched by (+5 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.27
 Nodes (11): _build_one(), _confidence(), detect(), _estimated_impact(), _group_of(), _now(), _primary_priority(), Assemble the Structured Issue Object (ARCHITECTURE.md §9.2).  Orchestrates Modul (+3 more)
 
 ### Community 67 - "Community 67"
-Cohesion: 0.21
-Nodes (7): formatDate(), formatDateTime(), formatRelativeTime(), formatTime(), parseDate(), USD, USD_CENTS
+Cohesion: 0.12
+Nodes (18): formatCountdown(), formatDate(), formatDateTime(), formatRelativeTime(), formatTime(), parseDate(), USD, USD_CENTS (+10 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.18
-Nodes (11): Alert, AlertStatus, EstimatedImpact, ImpactRiskLevel, Issue, IssueCategory, IssueStatus, MLResult (+3 more)
+Cohesion: 0.22
+Nodes (8): EstimatedImpact, ImpactRiskLevel, Issue, IssueCategory, IssueStatus, MLResult, XAIExplanation, XAIFactor
 
 ### Community 69 - "Community 69"
 Cohesion: 0.17
@@ -499,12 +569,12 @@ Cohesion: 0.20
 Nodes (3): client(), Tests for the mock controller API (task 2.3).  Covers the demo-control endpoin, TestClient with lifespan active (seeds workloads + baseline).
 
 ### Community 79 - "Community 79"
-Cohesion: 0.22
-Nodes (8): SavingsSummary, ExecutionMode, ForecastComponent, ForecastModelResult, OptimizationImpactForecast, Recommendation, RiskLevel, RuleTriggered
+Cohesion: 0.17
+Nodes (10): SavingsSummary, ApprovalsListResponse, ApprovalStatus, ExecutionMode, ForecastComponent, ForecastModelResult, OptimizationImpactForecast, Recommendation (+2 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.22
-Nodes (8): TelemetrySnapshot, count_telemetry(), get_telemetry_history(), persist_snapshot(), Telemetry persistence and query service.  Centralizes read/write access to the, Persist a single telemetry snapshot, returning the new row id.      The full s, Return telemetry snapshots for a workload, most recent first.      Each entry, Return the number of telemetry rows stored for a workload.
+Cohesion: 0.07
+Nodes (41): TelemetrySnapshot, TelemetrySnapshot, DimensionScore, DimensionScores, DimensionState, _apply_issue_deductions(), _carbon_raw(), _clamp() (+33 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.22
@@ -535,8 +605,8 @@ Cohesion: 0.22
 Nodes (8): CloudServiceType, ConstructionWorkflow, Environment, TelemetrySnapshot, VulnerabilitySeverity, WorkflowCriticality, Workload, WorkloadStatus
 
 ### Community 88 - "Community 88"
-Cohesion: 0.25
-Nodes (4): getIssue(), getIssues(), IssueFilters, FetchState
+Cohesion: 0.09
+Nodes (35): TelemetrySnapshot, Workload, Issue, _db(), _make_no_monitoring_issue(), Tests for the missing-monitoring detection + NBA path (task 18.1).  Covers Req, DET-MON-001 hints: production -> high, non-production -> medium., Initialise the isolated temp DB schema once for this module. (+27 more)
 
 ### Community 89 - "Community 89"
 Cohesion: 0.25
@@ -575,12 +645,12 @@ Cohesion: 0.29
 Nodes (6): Controller API (§11.9), Demo scenarios & expected behavior, Files, Mock Data Generator & Controller, Regenerating data, Suggested live demo order (§14.2)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.29
-Nodes (6): DimensionScore, DimensionScores, DimensionState, DowntimePrediction, PredictionConfidence, PriorityScore
+Cohesion: 0.07
+Nodes (23): CONFIDENCE_TONE, DowntimePrediction(), DowntimePredictionProps, probabilityTone(), RiskTimelineProps, formatPercent(), FilterSelectProps, ISSUE_CATEGORIES (+15 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.33
-Nodes (3): Path, Attempt to load the serialized model bundle; tolerate failure., Re-read the model artifact from disk (e.g. after retraining).
+Cohesion: 0.14
+Nodes (31): Any, ConnectorRegistry, HealthProbe, MCPToolExecution, Any, HealthProbe, RollbackOutcome, RunbookExecutionResult (+23 more)
 
 ### Community 100 - "Community 100"
 Cohesion: 0.33
@@ -646,25 +716,253 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
+### Community 127 - "Community 127"
+Cohesion: 0.13
+Nodes (19): datetime, get_audit_log(), list_audit_logs(), list_for_issue(), purge_expired_logs(), Audit log persistence, query, and event-driven recording (task 15.1).  Central, Return a single audit entry as a dict, or ``None`` if absent., Return audit entries matching the optional filters, most-recent-first.      Ar (+11 more)
+
+### Community 142 - "Community 142"
+Cohesion: 0.13
+Nodes (20): datetime, NotificationConnector, _AlwaysFailingConnector, _CountingConnector, db_path(), _drain(), _FakeClock, _FlakyConnector (+12 more)
+
+### Community 143 - "Community 143"
+Cohesion: 0.11
+Nodes (28): deliver_alert(), _deliver_once(), _escalate_delivery(), _on_alert_fired(), _on_remediation_completed(), _on_score_updated(), _primary_tool(), Alert delivery, retry, and auto-resolution (task 16.2).  Implements the delive (+20 more)
+
+### Community 144 - "Community 144"
+Cohesion: 0.09
+Nodes (19): getMCPLog(), getWorkloadPrediction(), getWorkloadTelemetry(), getWorkloadUptime(), MCPLogEntry, WorkloadUptime, DetailData, GreenOpsTabProps (+11 more)
+
+### Community 145 - "Community 145"
+Cohesion: 0.11
+Nodes (28): forecast_workload(), Run the 30-day forecaster on a workload's latest telemetry.      Returns HTTP, Any, Event, Recommendation, TelemetrySnapshot, Workload, build_recommendation() (+20 more)
+
+### Community 146 - "Community 146"
+Cohesion: 0.11
+Nodes (24): _assert_complete_result(), _auto_fix_recommendation(), client(), _escalation_recommendation(), _impact_forecast(), Tests for the remediation report generator + Remediation API (task 5.5).  Cove, Assert Property 9: a remediation report is complete and traceable., TestClient with lifespan active (seeds workloads + baseline + subscribes). (+16 more)
+
+### Community 147 - "Community 147"
+Cohesion: 0.17
+Nodes (27): ConnectorRegistry, Recommendation, build_runbook(), Derive an ordered runbook from a Recommendation.      The tool sequence is tak, Executes runbook steps sequentially via a :class:`ConnectorRegistry`., RunbookExecutor, make_recommendation(), Tests for the runbook executor, verification, rollback and composed auto-fix pa (+19 more)
+
+### Community 148 - "Community 148"
+Cohesion: 0.10
+Nodes (22): MCPToolExecution, AuditConnector, Simulated audit-log writer.      Args:         persist: When ``True``, write, MCPConnector, _assert_valid_execution(), Tests for the simulated MCP connectors (task 5.2).  Covers Requirements 8.1 (a, Every distinct mcp_tool referenced by recommendation_rules.json., Every mcp_tool in recommendation_rules.json resolves to a connector     and exe (+14 more)
+
+### Community 149 - "Community 149"
+Cohesion: 0.13
+Nodes (16): ABC, Any, AuditLog, datetime, build_audit_log(), _new_audit_id(), Simulated audit connector — writes immutable audit-trail entries.  The self-he, Construct a validated :class:`AuditLog` record. (+8 more)
+
+### Community 150 - "Community 150"
+Cohesion: 0.13
+Nodes (22): build_alert(), _factor_phrase(), generate_for_workload(), _on_score_updated(), Alert engine: threshold-based alert generation (task 16.1).  The alert engine, Build an :class:`Alert` for a workload from its score + latest state.      Ret, Generate, persist, and announce an alert for a workload.      Builds an alert, Generate an alert when a workload's Priority Score crosses the threshold. (+14 more)
+
+### Community 151 - "Community 151"
+Cohesion: 0.11
+Nodes (18): MCPConnector, ConnectorRegistry, Return the connector that handles ``tool_name`` (or ``None``)., Return ``True`` if any registered connector handles ``tool_name``., The registered connectors keyed by category., Tool-name → connector dispatch layer for the runbook executor.      The safety, Rebuild the flat tool-name index from the registered connectors., client() (+10 more)
+
+### Community 152 - "Community 152"
+Cohesion: 0.11
+Nodes (18): datetime, PriorityScore, TelemetrySnapshot, db_path(), Tests for the full 6-factor weighted Priority Score engine (task 20.1).  Cover, score = 100 * Sigma(weight_i * factor_i) when every factor is present., The shipped config must load without raising (constraint satisfied)., An initialized, isolated SQLite DB for a single test. (+10 more)
+
+### Community 153 - "Community 153"
+Cohesion: 0.14
+Nodes (22): _build_trends(), _confidence(), _extract_series(), _format_duration(), predict(), _preemptive_action(), _rank_trends(), Downtime prediction engine (Requirement 14).  Computes a failure probability, (+14 more)
+
+### Community 154 - "Community 154"
+Cohesion: 0.13
+Nodes (18): _degrading_history(), Tests for the Downtime Prediction engine (task 7.3, Requirement 14).  Covers t, Flat, healthy telemetry (most recent first)., Remove the temp DB directory created for this module., Build a full TelemetrySnapshot dict (chronological ``index`` -> timestamp)., Memory rising 70 -> ~96% over ``n`` hourly points (most recent first)., _seed_workload_with_history(), _snapshot_dict() (+10 more)
+
+### Community 155 - "Community 155"
+Cohesion: 0.12
+Nodes (20): _build_message(), _control_message(), _heartbeat_loop(), _on_event(), WebSocket real-time event streaming (task 17.1).  Exposes a single WebSocket e, Build a control envelope (``hello`` / ``heartbeat``) with no event., Send ``message`` to every connected client.          A failing client is dropp, Broadcast a mapped event-bus event to all connected clients. (+12 more)
+
+### Community 156 - "Community 156"
+Cohesion: 0.11
+Nodes (19): evaluate_remediation(), execute_remediation(), get_remediation_report(), _load_recommendation(), Remediation API (task 5.5).  Exposes the Module 3 self-healing surface (spec 1, Return a previously stored remediation report, or HTTP 404., Fetch a recommendation or raise HTTP 404., Decide the safe execution path for a recommendation without executing it. (+11 more)
+
+### Community 157 - "Community 157"
+Cohesion: 0.19
+Nodes (17): db_path(), _drain(), _FailingNotificationConnector, Tests for alert suppression, delivery, and auto-resolution (task 16.2).  Cover, An initialized, isolated SQLite DB for a single unit test., Connector whose delivery tools always report a simulated failure., _seed_workload(), test_alerts_for_different_workloads_are_not_suppressed() (+9 more)
+
+### Community 158 - "Community 158"
+Cohesion: 0.13
+Nodes (19): _aggregate_projected_savings(), dashboard_heatmap_composite(), dashboard_heatmap_matrix(), dashboard_recent_actions(), dashboard_savings(), dashboard_summary(), _open_issues(), _open_recommendations() (+11 more)
+
+### Community 159 - "Community 159"
+Cohesion: 0.12
+Nodes (11): AuditLogFilters, getAuditLogs(), FetchState, useAuditLogs(), AuditDetail(), AuditLogs(), DateFieldProps, EVENT_TYPES (+3 more)
+
+### Community 160 - "Community 160"
+Cohesion: 0.14
+Nodes (12): getRecentActions(), getRemediationReport(), getSavingsSummary(), RecentAction, formatDuration(), executionPathTone(), executionStatusTone(), humanize() (+4 more)
+
+### Community 161 - "Community 161"
+Cohesion: 0.13
+Nodes (15): _assert_forecast_present(), _assert_savings_consistent(), client(), Tests for the NBA pipeline + Recommendations/Forecast API (task 4.4).  Covers, Remove the temp DB directory created for this module., TestClient with lifespan active (seeds workloads + baseline + subscribes)., Reset to a clean healthy baseline before each test for isolation., Assert the recommendation carries a non-empty forecast_model_result. (+7 more)
+
+### Community 162 - "Community 162"
+Cohesion: 0.13
+Nodes (12): ApiError, getApprovals(), getWorkload(), getWorkloads(), FetchState, useApprovals(), FetchState, useWorkload() (+4 more)
+
+### Community 163 - "Community 163"
+Cohesion: 0.16
+Nodes (8): MessageListener, resolveWebSocketUrl(), StatusListener, WebSocketManager, WebSocketManagerOptions, RealtimeStatus, WebSocketProviderProps, WsConnectionStatus
+
+### Community 164 - "Community 164"
+Cohesion: 0.18
+Nodes (17): OptimizationImpactForecast, FactorMap, FactorValue, _clamp(), compute_optimization_impact(), _dimension_savings(), get_optimization_factors(), Optimization Impact Calculator (Module 2, task 4.3).  Given a baseline 30-day (+9 more)
+
+### Community 165 - "Community 165"
+Cohesion: 0.16
+Nodes (13): Event, db_path(), _drain(), Tests for the audit log service and event subscribers (task 15.1).  Covers Req, An initialized, isolated SQLite DB for a single test., Force the event handlers' ``write_audit_log`` calls into the temp DB.      The, Run an async coroutine to completion in a fresh loop., route_to_db() (+5 more)
+
+### Community 166 - "Community 166"
+Cohesion: 0.16
+Nodes (16): client(), _data(), Tests for the audit log API (task 15.2).  Covers Requirements 15.1 and 21.1 (s, Remove the temp DB directory created for this module., Seed a known set of audit entries into the isolated DB., TestClient with lifespan active (creates schema in the temp DB)., Assert a 200 + success envelope and return the ``data`` payload., seeded() (+8 more)
+
+### Community 167 - "Community 167"
+Cohesion: 0.18
+Nodes (17): _auto_fix_recommendation(), _escalation_recommendation(), _impact_forecast(), Tests for wiring the ticketing + notification connectors into self-healing (tas, The human_escalation path opens a ticket AND notifies, both recorded., The escalation records an audit-trail entry noting policy compliance., No workload change is applied; the timeline + report stay complete., The auto_fix path still works end-to-end and produces a valid result. (+9 more)
+
+### Community 168 - "Community 168"
+Cohesion: 0.17
+Nodes (16): Alert, create_alert(), get_active_alert(), get_alert(), list_alerts(), _persist(), Alert persistence and query service (task 16.1).  Centralizes read/write acces, Update an existing alert in place (used for resolution / suppression). (+8 more)
+
+### Community 169 - "Community 169"
+Cohesion: 0.23
+Nodes (16): _escalation_reason(), Execute the guardrailed auto-fix sequence for a recommendation.      The safet, Compose the human-readable escalation reason, noting any timeout breach., run_auto_fix(), _auto_fix_recommendation(), _impact_forecast(), Tests for runbook verification/rollback timeout enforcement (task 21.2 — Requir, A non-prod, reversible recommendation eligible for the auto_fix path. (+8 more)
+
+### Community 170 - "Community 170"
+Cohesion: 0.18
+Nodes (15): client(), _data(), Tests for the Dashboard API (task 8.1).  Covers Requirements 16.1, 16.2 and 21, After an auto-fix flows end to end, it appears in recent actions + savings., Remove the temp DB directory created for this module., TestClient with lifespan active (seeds workloads + baseline telemetry)., Assert a 200 + success envelope and return the ``data`` payload., teardown_module() (+7 more)
+
+### Community 171 - "Community 171"
+Cohesion: 0.23
+Nodes (13): db_path(), _drain(), Tests for the alert engine (task 16.1).  Covers Requirement 13.1 (generation h, An initialized, isolated SQLite DB for a single test., _seed_workload(), test_build_alert_below_threshold_returns_none(), test_build_alert_populates_fields_and_severity(), test_generate_below_threshold_does_nothing() (+5 more)
+
+### Community 172 - "Community 172"
+Cohesion: 0.15
+Nodes (13): Alert, AlertStatus, Severity, AlertNewPayload, ApprovalCountPayload, HealingStatusPayload, HeatmapUpdatePayload, PredictionUpdatePayload (+5 more)
+
+### Community 173 - "Community 173"
+Cohesion: 0.24
+Nodes (3): Any, CloudConnector, Simulated infrastructure-operations connector (no real cloud calls).
+
+### Community 174 - "Community 174"
+Cohesion: 0.20
+Nodes (13): DataFrame, Path, main(), Train and freeze the Isolation Forest anomaly detector (ARCHITECTURE.md §5.5.1,, IsolationForest, load_training_features(), main(), Train the Isolation Forest anomaly detector (task 3.2).  Reads ``backend/mock_ (+5 more)
+
+### Community 175 - "Community 175"
+Cohesion: 0.17
+Nodes (13): Any, ConnectorRegistry, _as_dict(), Runbook executor for Module 3 (Guardrailed Self-Healing) — task 5.3.  A *runbo, Coerce a Pydantic model / mapping / object into a plain dict., Return the runbook execution budget in milliseconds from policy timers., Build the ``recommendation_type -> ordered MCP tools`` map from policy.      D, Return the ordered MCP tool names for a ``recommendation_type``.      Looks th (+5 more)
+
+### Community 176 - "Community 176"
+Cohesion: 0.20
+Nodes (11): Downtime Prediction engine (cross-cutting, Requirement 14).  Forecasts *future, build_risk_timeline(), _clamp(), MetricTrend, overall_risk(), 12-point hourly risk timeline generation (Requirement 14.2).  Given the per-me, A single metric's degradation trend used for projection.      Attributes:, Fraction (0-1) of the critical threshold reached ``hours`` ahead. (+3 more)
+
+### Community 177 - "Community 177"
+Cohesion: 0.16
+Nodes (13): client(), Tests for the WebSocket real-time event stream (task 17.1).  Covers Requiremen, A connecting client gets a hello envelope and is tracked by the manager., Leaving the WebSocket context removes the client from the manager., All five required stream types map from a distinct internal event., A failing client is removed; healthy clients still receive the message., Start the app once for the whole module (lifespan wires the broadcaster)., Poll the manager until it reports ``expected`` connections.      Disconnect ha (+5 more)
+
+### Community 178 - "Community 178"
+Cohesion: 0.28
+Nodes (12): apply_suppression(), check_and_suppress(), is_within_window(), _parse_dt(), Alert suppression / deduplication (task 16.2).  Implements the suppression hal, Suppress a new alert for ``workload_id`` if a recent one is still open.      R, Coerce a stored timestamp (ISO string or datetime) to aware datetime., Return True if ``existing`` falls inside the active suppression window.      T (+4 more)
+
+### Community 179 - "Community 179"
+Cohesion: 0.22
+Nodes (8): ConnectionManager, Tracks active WebSocket connections and broadcasts envelopes to them.      All, Accept and register a new client connection., Deregister a client connection (no-op if already removed)., Send a single envelope to one client., Stream real-time platform events to a connected dashboard client., websocket_events(), WebSocket
+
+### Community 180 - "Community 180"
+Cohesion: 0.26
+Nodes (8): CompositeHeatmapCell, getCompositeHeatmap(), FetchState, FACTOR_LABELS, HeatmapCell(), HeatmapCellProps, statusLabel(), topFactor()
+
+### Community 181 - "Community 181"
+Cohesion: 0.25
+Nodes (10): Any, ConnectorRegistry, MCPToolExecution, _is_compensatable(), Rollback handler for Module 3 (Guardrailed Self-Healing) — task 5.3.  When pos, Return the rollback execution budget in milliseconds from policy timers., Reverse the successful steps of a runbook, then mark for escalation.      Args, rollback() (+2 more)
+
+### Community 182 - "Community 182"
+Cohesion: 0.20
+Nodes (11): AuditLog, _on_issue_detected(), _on_recommendation_generated(), _on_remediation_completed(), Build and persist an :class:`AuditLog`, returning the stored record.      Conv, Record an audit entry when an Issue is detected (status -> its state)., Record an audit entry when a Recommendation is generated for an Issue., Record an audit entry when a Remediation completes (incl. rollbacks).      The (+3 more)
+
+### Community 183 - "Community 183"
+Cohesion: 0.20
+Nodes (5): Workload, client(), _make_workload(), Tests for the 90-day uptime history endpoint (task 8.2).  Covers Requirement 1, TestClient with lifespan active (creates schema in the temp DB).
+
+### Community 184 - "Community 184"
+Cohesion: 0.24
+Nodes (11): Event, _publish_on_app_loop(), Publishing SCORE_UPDATED pushes a heatmap_update envelope to the client., Each mapped event type broadcasts its frontend-facing stream type., The envelope carries type, internal event_type, data and timestamp., Publish ``event`` on the running app event loop and wait for handlers.      Th, Read messages until one matches ``expected_type`` (and workload_id)., _receive_until() (+3 more)
+
+### Community 185 - "Community 185"
+Cohesion: 0.24
+Nodes (7): CloverMark(), CloverMarkProps, Layout(), NAV, NavItem, Sidebar(), SimBanner()
+
+### Community 186 - "Community 186"
+Cohesion: 0.22
+Nodes (7): LatestByType, Unsubscribe, WebSocketContext, WebSocketContextValue, WsEnvelope, WsMessage, WsStreamType
+
+### Community 187 - "Community 187"
+Cohesion: 0.24
+Nodes (7): Any, _new_ticket_id(), Return a unique, human-readable simulated ticket id., Simulated ticketing system connector., TicketingConnector, test_create_ticket_ids_are_unique(), test_ticketing_connector_exposes_create_ticket()
+
+### Community 188 - "Community 188"
+Cohesion: 0.25
+Nodes (4): DashboardSummary, getDashboardSummary(), FetchState, StatCardProps
+
+### Community 189 - "Community 189"
+Cohesion: 0.39
+Nodes (5): Any, _delivery_record(), NotificationConnector, Build a deterministic-shaped simulated delivery record., Simulated multi-channel notification connector.
+
+### Community 190 - "Community 190"
+Cohesion: 0.29
+Nodes (5): getMatrixHeatmap(), MatrixHeatmapRow, DIMENSIONS, FetchState, dimensionStateColor()
+
+### Community 191 - "Community 191"
+Cohesion: 0.25
+Nodes (5): Any, MCPToolExecution, Return the sorted list of tool names this connector exposes., Deterministically derive a small simulated duration for a tool.          The v, Execute a simulated tool and return a structured execution record.          Un
+
+### Community 192 - "Community 192"
+Cohesion: 0.46
+Nodes (7): useRealtimeAlerts(), useRealtimeApprovals(), useRealtimeHealing(), useRealtimeHeatmap(), useRealtimePredictions(), useWebSocket(), useWsSubscription()
+
+### Community 193 - "Community 193"
+Cohesion: 0.33
+Nodes (5): UptimeSegment, UptimeStatus, STATUS_COLORS, STATUS_LABELS, UptimeBarProps
+
+### Community 194 - "Community 194"
+Cohesion: 0.33
+Nodes (4): MCPToolExecution, Return the sorted list of every tool name the registry can dispatch., Dispatch ``tool_name`` to its connector and return the execution.          Unk, Record a tool invocation to the MCP activity log (best-effort).          Centr
+
+### Community 195 - "Community 195"
+Cohesion: 0.33
+Nodes (6): Any, maybe_trigger_preemptive(), _PreemptiveIssue, Lightweight Issue-shaped object for the NBA engine.      The NBA engine only r, Trigger a preemptive Recommendation when probability > 70% (best-effort)., DowntimePrediction
+
+### Community 196 - "Community 196"
+Cohesion: 0.38
+Nodes (5): useRealtimeStatus(), Header(), HeaderProps, StaleIndicator(), StaleIndicatorProps
+
+### Community 197 - "Community 197"
+Cohesion: 0.33
+Nodes (5): default_connectors(), Return a fresh set of connectors keyed by category.      Convenience factory f, Build a registry from the default connector set., test_default_connectors_cover_all_categories(), test_registry_index_covers_union_of_connector_tools()
+
 ## Knowledge Gaps
-- **588 isolated node(s):** `Usage`, `What graphify is for`, `Step 0 - GitHub repos and multi-path merge (only if a URL or several paths)`, `Step 1 - Ensure graphify is installed`, `Step 2 - Detect files` (+583 more)
+- **683 isolated node(s):** `Overview`, `Tasks`, `Notes`, `Task Dependency Graph`, `AbstractEventLoop` (+678 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Workload` connect `Community 36` to `Community 65`, `Community 99`, `Community 44`, `Community 16`, `Community 17`, `Community 18`, `Community 52`, `Community 21`, `Community 22`, `Community 24`, `Community 25`, `Community 26`, `Community 30`, `Community 57`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
-- **Why does `TelemetrySnapshot` connect `Community 52` to `Community 33`, `Community 36`, `Community 38`, `Community 16`, `Community 80`, `Community 18`, `Community 17`, `Community 21`, `Community 22`, `Community 24`, `Community 25`, `Community 30`, `Community 57`?**
-  _High betweenness centrality (0.024) - this node is a cross-community bridge._
-- **Why does `connection()` connect `Community 32` to `Community 64`, `Community 65`, `Community 33`, `Community 80`, `Community 49`, `Community 21`, `Community 55`, `Community 62`, `Community 30`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `connection()` connect `Community 55` to `Community 32`, `Community 64`, `Community 65`, `Community 33`, `Community 168`, `Community 146`, `Community 148`, `Community 149`, `Community 182`, `Community 21`, `Community 62`, `Community 156`, `Community 30`, `Community 127`?**
+  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+- **Why does `Workload` connect `Community 57` to `Community 65`, `Community 36`, `Community 44`, `Community 16`, `Community 17`, `Community 18`, `Community 52`, `Community 21`, `Community 22`, `Community 24`, `Community 25`, `Community 26`, `Community 30`?**
+  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `TelemetrySnapshot` connect `Community 52` to `Community 33`, `Community 65`, `Community 36`, `Community 38`, `Community 16`, `Community 17`, `Community 18`, `Community 25`, `Community 21`, `Community 22`, `Community 55`, `Community 24`, `Community 57`, `Community 30`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
 - **Are the 59 inferred relationships involving `Workload` (e.g. with `Any` and `MLResult`) actually correct?**
   _`Workload` has 59 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 54 inferred relationships involving `TelemetrySnapshot` (e.g. with `TelemetrySnapshot` and `Event`) actually correct?**
   _`TelemetrySnapshot` has 54 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 24 inferred relationships involving `Issue` (e.g. with `Any` and `MLResult`) actually correct?**
-  _`Issue` has 24 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Usage`, `What graphify is for`, `Step 0 - GitHub repos and multi-path merge (only if a URL or several paths)` to the rest of the system?**
-  _966 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Are the 5 inferred relationships involving `ConnectorRegistry` (e.g. with `AuditConnector` and `CloudConnector`) actually correct?**
+  _`ConnectorRegistry` has 5 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Overview`, `Tasks`, `Notes` to the rest of the system?**
+  _1439 weakly-connected nodes found - possible documentation gaps or missing edges._
