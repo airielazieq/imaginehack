@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useIssues } from '../hooks/useIssues'
 import { useWorkloads } from '../hooks/useWorkloads'
 import type { IssueFilters } from '../api/endpoints'
-import type { Issue, Severity } from '../types'
+import type { Issue, Severity, Workload } from '../types'
 import { formatDateTime, formatPercent } from '../lib/formatters'
 import DataTable, { type Column } from '../components/ui/DataTable'
 import Badge, { severityTone } from '../components/ui/Badge'
@@ -93,15 +93,21 @@ export default function Issues() {
   const { data: issues, loading, error } = useIssues(filters)
   const { data: workloads } = useWorkloads()
 
-  // Map workload_id → display name for the first column.
-  const workloadNames = useMemo(() => {
-    const map = new Map<string, string>()
-    workloads?.forEach((w) => map.set(w.workload_id, w.workload_name))
+  // Map workload_id → workload so issue rows can show the workload's name and
+  // its source environment (issues only carry workload_id).
+  const workloadById = useMemo(() => {
+    const map = new Map<string, Workload>()
+    workloads?.forEach((w) => map.set(w.workload_id, w))
     return map
   }, [workloads])
 
   const workloadName = (issue: Issue) =>
-    workloadNames.get(issue.workload_id) ?? issue.workload_id
+    workloadById.get(issue.workload_id)?.workload_name ?? issue.workload_id
+
+  // The workload's source environment (production/staging/…), or '—' if the
+  // workload list hasn't loaded / the id is unknown.
+  const workloadEnvironment = (issue: Issue) =>
+    workloadById.get(issue.workload_id)?.environment ?? ''
 
   const columns = useMemo<Column<Issue>[]>(
     () => [
@@ -112,6 +118,20 @@ export default function Issues() {
         render: (i) => (
           <span className="font-medium text-navy-50">{workloadName(i)}</span>
         ),
+        sortable: true,
+      },
+      {
+        key: 'environment',
+        header: 'Source',
+        accessor: (i) => workloadEnvironment(i),
+        render: (i) => {
+          const env = workloadEnvironment(i)
+          return env ? (
+            <span className="text-navy-200">{humanize(env)}</span>
+          ) : (
+            <span className="text-navy-500">—</span>
+          )
+        },
         sortable: true,
       },
       {
@@ -147,9 +167,9 @@ export default function Issues() {
         sortable: true,
       },
     ],
-    // workloadNames drives the workload column label; include it as a dep.
+    // workloadById drives the workload + source columns; include it as a dep.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [workloadNames],
+    [workloadById],
   )
 
   return (

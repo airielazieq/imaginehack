@@ -4,6 +4,9 @@
 
 @layer base {
   html {
+    /* Bump the root size up from the 16px default so all rem-based text reads a
+       little larger across the app. Tune this single value to scale globally. */
+    font-size: 17px;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }

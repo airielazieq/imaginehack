@@ -1,9 +1,9 @@
-// The composite heatmap: a responsive grid with one cell per Workload, each
-// colored on a continuous green→red gradient by its Priority Score. Fetches
-// the composite heatmap from the dashboard API and renders a HeatmapCell per
-// workload.
+// The status heatmap: a fixed 5-column grid (5×4 for the 20 seeded workloads)
+// with one cell per Workload, each colored by a discrete green/yellow/red status
+// tone derived from its Priority Score. Fetches the composite heatmap from the
+// dashboard API and renders a HeatmapCell per workload.
 //
-// Requirements: 16.1 (one cell per workload, gradient by Priority Score),
+// Requirements: 16.1 (one cell per workload, colored by Priority Score),
 // 16.3/16.4 (per-cell tooltip + click-through handled by HeatmapCell).
 
 import { useEffect, useState } from 'react'
@@ -49,10 +49,10 @@ export default function CompositeGrid() {
   if (state.loading) {
     return (
       <div
-        className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3"
+        className="grid grid-cols-5 gap-3"
         aria-busy="true"
       >
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
             className="min-h-[84px] animate-pulse rounded-lg bg-navy-800 ring-1 ring-navy-700"
@@ -79,7 +79,7 @@ export default function CompositeGrid() {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+    <div className="grid grid-cols-5 gap-3">
       {state.data.map((cell) => (
         <HeatmapCell key={cell.workload_id} cell={cell} />
       ))}

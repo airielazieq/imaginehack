@@ -144,10 +144,91 @@ def _build_evidence(
     }
 
 
-def _top_evidence_for_explanation(xai: XAIExplanation) -> list:
-    """Build the top-evidence sequence handed to the LLM/template explainer."""
+# --------------------------------------------------------------------------- #
+# Rule-grounded explanation evidence
+# --------------------------------------------------------------------------- #
+# The user-facing "why" must come from the rule that actually fired — the
+# classification is rule-authoritative (SDD §4-5), so a rule match *is* the
+# reason an Issue exists. The Isolation Forest / SHAP factors describe what made
+# the workload look anomalous and remain available on ``xai_explanation`` as
+# supporting context, but they are not the narrative: for boolean/categorical
+# security findings (public exposure, critical CVE, missing monitoring) the
+# anomaly model's top numeric factors are unrelated to the actual cause and
+# produce an incoherent explanation.
+#
+# Plain-language phrase for each field the detection rules evaluate.
+_RULE_FIELD_PHRASES: dict[str, str] = {
+    "cpu_usage_percent": "CPU utilization",
+    "runtime_hours_24h": "24-hour runtime",
+    "error_rate_percent": "error rate",
+    "cost_30d_forecast": "projected 30-day cost",
+    "carbon_kgco2e_24h": "24-hour carbon emissions",
+}
+
+
+def _truthy(value: Any) -> bool:
+    """Interpret a rule-evidence value as a boolean (handles 1/0, "true")."""
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes", "on"}
+    return bool(value)
+
+
+def _humanize(value: Any) -> str:
+    """Make a snake_case categorical value readable."""
+    return str(value).replace("_", " ").strip()
+
+
+def _describe_rule_field(field_name: str, value: Any) -> str:
+    """Turn one matched rule condition into a plain-language 'why' clause."""
+    if field_name == "public_storage":
+        return (
+            "storage is publicly accessible, exposing data to the internet"
+            if _truthy(value)
+            else "storage access is restricted"
+        )
+    if field_name == "public_exposure":
+        return (
+            "the workload is publicly exposed to the internet"
+            if _truthy(value)
+            else "the workload is not publicly exposed"
+        )
+    if field_name == "vulnerability_severity":
+        return f"a {_humanize(value)}-severity vulnerability is present"
+    if field_name == "critical_vulnerability_count":
+        return f"{value} critical vulnerabilities are present"
+    if field_name == "access_anomaly_detected":
+        if _truthy(value):
+            return "an access anomaly was detected"
+        return "no access anomaly was detected"
+    if field_name == "monitoring_enabled":
+        return (
+            "monitoring is enabled"
+            if _truthy(value)
+            else "monitoring is disabled, reducing observability"
+        )
+    if field_name == "environment":
+        return f"it runs in the {_humanize(value)} environment"
+    if field_name == "construction_workflow":
+        return f"it supports the {_humanize(value)} workflow"
+
+    # Numeric (or unknown) fields: name the metric and surface its value.
+    phrase = _RULE_FIELD_PHRASES.get(field_name, field_name.replace("_", " "))
+    if isinstance(value, bool):
+        return f"{phrase} is {value}"
+    if isinstance(value, (int, float)):
+        return f"{phrase} is {value:,.1f}"
+    return f"{phrase} is {value}"
+
+
+def _rule_evidence_for_explanation(primary: RuleMatch) -> list[str]:
+    """Build the top-evidence clauses handed to the LLM/template explainer.
+
+    Derived from the *primary* rule match's matched conditions (the authoritative
+    reason the Issue exists), capped to the first three for a concise sentence.
+    """
     return [
-        (f.feature, f.value, f.impact) for f in xai.top_contributing_factors[:3]
+        _describe_rule_field(field_name, value)
+        for field_name, value in list(primary.evidence.items())[:3]
     ]
 
 
@@ -220,10 +301,14 @@ def detect(
 
     evidence = _build_evidence(telemetry, matches, ml_result, xai)
 
-    # 5. LLM / template user-facing explanation (wording only).
+    # 5. LLM / template user-facing explanation (wording only). The "why" comes
+    #    from the authoritative rule that fired (primary), not the anomaly
+    #    model's incidental SHAP factors, so the explanation always matches the
+    #    classification. SHAP factors stay on ``xai_explanation`` as supporting
+    #    context.
     llm_explanation = llm_explainer.generate_explanation(
         issue_type=issue_type,
-        top_evidence=_top_evidence_for_explanation(xai),
+        top_evidence=_rule_evidence_for_explanation(primary),
         impact_area=issue_category,
     )
 

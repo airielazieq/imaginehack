@@ -11,14 +11,36 @@ const clamp = (n: number, min = 0, max = 100): number =>
   Math.min(Math.max(n, min), max)
 
 /**
- * Priority Score → continuous green→amber→red gradient.
- * Returns an HSL string. score 0 → green (hue 140), score 100 → red (hue 0).
+ * The three discrete status tones used by the Status heatmap. White cell text
+ * sits on top of these, so each is a mid-dark 600-level tone with adequate
+ * contrast. Matches the dimension-matrix green/yellow/red for visual consistency.
+ */
+export const PRIORITY_STATUS_COLORS = {
+  green: '#16a34a', // green-600  — healthy
+  yellow: '#ca8a04', // yellow-600 — watch
+  red: '#dc2626', // red-600    — at risk
+} as const
+
+/**
+ * Cut-points for the Status heatmap's three tones (higher score = worse).
+ * Heatmap-specific on purpose, so tuning these never shifts the shared
+ * SCORE_THRESHOLDS used by severity badges/alerts.
+ */
+export const PRIORITY_STATUS_THRESHOLDS = {
+  red: 70, // ≥ 70 → at risk
+  yellow: 35, // ≥ 35 → watch
+} as const
+
+/**
+ * Priority Score → one of three discrete status tones (green / yellow / red).
+ * Higher score = worse: < 35 healthy (green), 35–70 watch (yellow), ≥ 70 at risk
+ * (red).
  */
 export function priorityScoreColor(score: number): string {
   const s = clamp(score)
-  const hue = 140 - (s / 100) * 140 // 140 (green) → 0 (red)
-  const lightness = s > 55 ? 42 : 40
-  return `hsl(${hue.toFixed(0)}, 62%, ${lightness}%)`
+  if (s >= PRIORITY_STATUS_THRESHOLDS.red) return PRIORITY_STATUS_COLORS.red
+  if (s >= PRIORITY_STATUS_THRESHOLDS.yellow) return PRIORITY_STATUS_COLORS.yellow
+  return PRIORITY_STATUS_COLORS.green
 }
 
 /**

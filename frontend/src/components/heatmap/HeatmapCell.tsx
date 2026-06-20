@@ -1,9 +1,9 @@
-// A single composite-heatmap cell: one Workload colored by its Priority Score
-// on a continuous green→red gradient. Hovering reveals a tooltip with the
+// A single status-heatmap cell: one Workload colored by its Priority Score with
+// a discrete green/yellow/red status tone. Hovering reveals a tooltip with the
 // workload name, score, status, and the top contributing factor (derived from
 // the PriorityScore detail); clicking navigates to the Workload detail page.
 //
-// Requirements: 16.1 (gradient by Priority Score), 16.3 (hover tooltip),
+// Requirements: 16.1 (colored by Priority Score), 16.3 (hover tooltip),
 // 16.4 (click → Workload detail).
 
 import { Link } from 'react-router-dom'

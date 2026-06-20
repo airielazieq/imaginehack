@@ -27,7 +27,7 @@ export default function Dashboard() {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold text-navy-50">
-            {view === 'composite' ? 'Composite heatmap' : 'Dimension matrix'}
+            {view === 'composite' ? 'Status heatmap' : 'Dimension matrix'}
           </h2>
           <HeatmapToggle value={view} onChange={setView} />
         </div>
