@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { WebSocketProvider } from './hooks/useWebSocket'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
 import Workloads from './pages/Workloads'
@@ -15,21 +16,23 @@ import MockController from './pages/MockController'
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/workloads" element={<Workloads />} />
-          <Route path="/workloads/:id" element={<WorkloadDetail />} />
-          <Route path="/issues" element={<Issues />} />
-          <Route path="/issues/:id" element={<IssueDetail />} />
-          <Route path="/approvals" element={<Approvals />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/audit" element={<AuditLogs />} />
-          <Route path="/mock" element={<MockController />} />
-          {/* Unknown paths fall back to the dashboard. */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <WebSocketProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/workloads" element={<Workloads />} />
+            <Route path="/workloads/:id" element={<WorkloadDetail />} />
+            <Route path="/issues" element={<Issues />} />
+            <Route path="/issues/:id" element={<IssueDetail />} />
+            <Route path="/approvals" element={<Approvals />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/audit" element={<AuditLogs />} />
+            <Route path="/mock" element={<MockController />} />
+            {/* Unknown paths fall back to the dashboard. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </WebSocketProvider>
     </BrowserRouter>
   )
 }

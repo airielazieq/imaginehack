@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Clock3 } from 'lucide-react'
+import StaleIndicator from '../ui/StaleIndicator'
 
 interface HeaderProps {
   /**
@@ -14,7 +15,7 @@ export default function Header({ pendingApprovals = 0 }: HeaderProps) {
     <header className="sticky top-0 z-20 bg-navy-900/85 backdrop-blur border-b border-navy-700">
       <div className="h-16 px-6 flex items-center gap-4">
         <div className="leading-tight">
-          <div className="text-sm font-semibold text-white">
+          <div className="text-sm font-semibold text-navy-50">
             Clover Cloud Intelligence Platform
           </div>
           <div className="text-[11px] text-navy-300">Secure &amp; Energy-Aware Cloud Ops</div>
@@ -24,20 +25,14 @@ export default function Header({ pendingApprovals = 0 }: HeaderProps) {
           <Link
             to="/approvals"
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium
-                       bg-warning-500/15 text-warning-300 border border-warning-500/30
+                       bg-warning-500/15 text-warning-700 border border-warning-500/30
                        hover:bg-warning-500/25 transition-colors"
           >
             <Clock3 size={15} />
             {pendingApprovals} pending {pendingApprovals === 1 ? 'approval' : 'approvals'}
           </Link>
 
-          <span className="flex items-center gap-1.5 text-xs text-navy-300">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-healthy-400 opacity-60 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-healthy-500" />
-            </span>
-            Live
-          </span>
+          <StaleIndicator />
         </div>
       </div>
     </header>

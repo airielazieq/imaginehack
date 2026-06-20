@@ -33,9 +33,9 @@ const NAV: NavItem[] = [
 
 export default function Sidebar() {
   return (
-    <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-navy-950 text-white">
+    <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-navy-950 text-navy-100">
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-navy-700">
-        <span className="text-healthy-400">
+        <span className="text-healthy-700">
           <CloverMark className="h-8 w-8" />
         </span>
         <div className="leading-tight">

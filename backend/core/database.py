@@ -141,6 +141,22 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 CREATE INDEX IF NOT EXISTS idx_alerts_workload ON alerts(workload_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
+
+CREATE TABLE IF NOT EXISTS mcp_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp         TEXT NOT NULL,
+    workload_id       TEXT,
+    category          TEXT NOT NULL,
+    tool              TEXT NOT NULL,
+    params            TEXT NOT NULL,       -- JSON: tool input params
+    result            TEXT NOT NULL,       -- JSON: tool output
+    status            TEXT,
+    policy_compliance TEXT,
+    remediation_id    TEXT,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_mcp_log_workload ON mcp_log(workload_id);
+CREATE INDEX IF NOT EXISTS idx_mcp_log_timestamp ON mcp_log(timestamp);
 """
 
 

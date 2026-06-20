@@ -4,19 +4,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dark navy base canvas + surfaces.
+        // Light neutral canvas + surfaces.
+        // NOTE: the numeric ramp is intentionally inverted vs. a normal scale so
+        // existing usage keeps working in light mode: high numbers (800/900/950)
+        // are light SURFACES (used as backgrounds), low numbers (50–400) are dark
+        // TEXT tones. Flipping these values converts the whole app dark→light
+        // without rewriting every `bg-navy-*` / `text-navy-*` utility.
         navy: {
-          50: '#eef2f9',
-          100: '#d6def0',
-          200: '#aebfe0',
-          300: '#7e98cc',
-          400: '#4f6fb3',
-          500: '#34528f',
-          600: '#243c6e',
-          700: '#1a2c52',
-          800: '#121f3a',
-          900: '#0c1628', // primary background
-          950: '#070d18', // deepest panel / sidebar
+          50: '#0b1220', // darkest — headings / strong text
+          100: '#1e293b', // primary body text
+          200: '#334155', // strong secondary text
+          300: '#475569', // muted text
+          400: '#64748b', // faint text
+          500: '#94a3b8', // placeholder / faint icons
+          600: '#cbd5e1', // medium border
+          700: '#e2e8f0', // light border / ring
+          800: '#ffffff', // card surface
+          900: '#f1f5f9', // primary background
+          950: '#ffffff', // deepest panel / sidebar
         },
         // Healthy = teal / green.
         healthy: {
@@ -69,7 +74,7 @@ export default {
           green: '#10b981',
           yellow: '#f59e0b',
           red: '#f43f6e',
-          gray: '#475569',
+          gray: '#94a3b8',
         },
       },
       fontFamily: {
@@ -77,8 +82,8 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.30)',
-        lift: '0 8px 24px rgba(0,0,0,0.40)',
+        card: '0 1px 2px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.10)',
+        lift: '0 8px 24px rgba(15,23,42,0.12)',
       },
       borderRadius: {
         xl: '0.875rem',

@@ -7,16 +7,20 @@
 import { get, patch, post } from './client'
 import type {
   Alert,
+  ApprovalItem,
+  ApprovalsListResponse,
   AuditLog,
   DimensionScores,
   DowntimePrediction,
-  ForecastComponent,
+  ExecutionPath,
+  ExecutionStatus,
   Issue,
   IssueStatus,
   PriorityScore,
   Recommendation,
   RemediationResult,
   TelemetrySnapshot,
+  VerificationResult,
   Workload,
 } from '../types'
 
@@ -24,47 +28,90 @@ import type {
  * Response shapes not in the shared types (dashboard / mock / misc).  *
  * ------------------------------------------------------------------ */
 
-/** Stat-card summary for the dashboard landing page. */
+/**
+ * Aggregate 30-day projected savings rollup (matches the backend
+ * `projected_savings` block returned by /dashboard/summary and /dashboard/savings).
+ */
+export interface ProjectedSavings {
+  cost_30d: number
+  energy_30d_kwh: number
+  carbon_30d_kgco2e: number
+}
+
+/**
+ * Stat-card summary for the dashboard landing page.
+ * Mirrors `GET /api/dashboard/summary` (backend/api/dashboard.py).
+ */
 export interface DashboardSummary {
   total_workloads: number
   active_issues: number
   critical_issues: number
   pending_approvals: number
-  self_healing_actions: number
-  critical_workloads: number
-  avg_security_score: number
-  avg_energy_score: number
-  monthly_cost: number
-  projected_monthly_savings: number
-  projected_carbon_reduction: number
+  open_recommendations: number
+  projected_savings: ProjectedSavings
 }
 
-/** One composite-grid cell: a workload's Priority Score + quick context. */
+/**
+ * One composite-grid cell: a workload's Priority Score + full score detail.
+ * Mirrors an entry in the `cells` array of `GET /api/dashboard/heatmap/composite`.
+ */
 export interface CompositeHeatmapCell {
   workload_id: string
-  workload_name: string
-  score: number
-  status: string
-  top_alert: string | null
-  downtime_risk: number | null
+  workload_name: string | null
+  status: string | null
+  construction_workflow?: string | null
+  priority_score: number
+  score_detail: PriorityScore
 }
 
-/** Projected savings summary across cost / energy / carbon. */
+/** Envelope payload for the composite heatmap endpoint. */
+interface CompositeHeatmapResponse {
+  cells: CompositeHeatmapCell[]
+  count: number
+}
+
+/**
+ * One matrix-heatmap row: a workload plus its per-dimension scores.
+ * Mirrors an entry in the `rows` array of `GET /api/dashboard/heatmap/matrix`.
+ */
+export interface MatrixHeatmapRow {
+  workload_id: string
+  workload_name: string | null
+  status: string | null
+  dimension_scores: DimensionScores
+}
+
+/** Envelope payload for the matrix heatmap endpoint. */
+interface MatrixHeatmapResponse {
+  rows: MatrixHeatmapRow[]
+  count: number
+}
+
+/**
+ * Projected savings rollup across open recommendations.
+ * Mirrors `GET /api/dashboard/savings`.
+ */
 export interface SavingsSummary {
-  forecast_without_action: ForecastComponent
-  forecast_after_action: ForecastComponent
-  projected_savings: ForecastComponent
+  projected_savings: ProjectedSavings
+  recommendation_count: number
 }
 
 /** A recent remediation entry for the dashboard "recent actions" feed. */
 export interface RecentAction {
   remediation_id: string
   workload_id: string
-  workload_name: string
-  action_taken: string
-  execution_path: string
-  execution_status: string
-  timestamp: string
+  issue_id: string | null
+  recommendation_id: string | null
+  execution_path: ExecutionPath
+  execution_status: ExecutionStatus
+  verification_result: VerificationResult | null
+  rollback_triggered: boolean
+}
+
+/** Envelope payload for the recent-actions endpoint. */
+interface RecentActionsResponse {
+  actions: RecentAction[]
+  count: number
 }
 
 /** A single MCP tool invocation log entry. */
@@ -79,27 +126,103 @@ export interface MCPLogEntry {
   remediation_id: string | null
 }
 
-/** A demo scenario exposed by the mock controller. */
+/**
+ * A demo scenario exposed by the mock controller.
+ * Mirrors an entry from `mock_data_service.list_scenarios()`
+ * (backend/services/mock_data_service.py) — telemetry payload withheld.
+ */
 export interface MockScenario {
   scenario_id: string
-  name: string
-  description: string
-  target_workloads: string[]
-  expected_path: string
+  name: string | null
+  description: string | null
+  target_workload_id: string | null
+  expected_issue_type: string | null
+  expected_detection_rule: string | null
+  /** Intended self-healing route (e.g. "auto_fix", "human_escalation_required"). */
+  expected_execution_path: string | null
 }
 
-/** Current state of the mock telemetry stream. */
+/** Envelope payload for `GET /api/mock/scenarios` (`{ scenarios, count }`). */
+interface MockScenariosResponse {
+  scenarios: MockScenario[]
+  count: number
+}
+
+/**
+ * Result of triggering a scenario via `POST /api/mock/trigger/{id}`.
+ * Mirrors `mock_data_service.trigger_scenario`.
+ */
+export interface MockTriggerResult {
+  scenario_id: string
+  workload_id: string
+  telemetry_id: number
+  expected_issue_type: string | null
+  expected_execution_path: string | null
+}
+
+/**
+ * Result of `POST /api/mock/reset`. Mirrors `mock_data_service.reset`:
+ * the number of healthy snapshots emitted plus per-table cleared counts.
+ */
+export interface MockResetResult {
+  baseline_snapshots: number
+  cleared: Record<string, number>
+}
+
+/** Result of `POST /api/mock/stream/start`. */
+export interface MockStreamStartResult {
+  started: boolean
+  streaming: boolean
+}
+
+/** Result of `POST /api/mock/stream/stop`. */
+export interface MockStreamStopResult {
+  stopped: boolean
+  streaming: boolean
+}
+
+/**
+ * Current mock controller / stream status from `GET /api/mock/status`.
+ * Mirrors `mock_data_service.status()`.
+ */
 export interface MockStatus {
   streaming: boolean
-  interval_seconds: number | null
-  last_emitted_at: string | null
+  triggered_scenarios: string[]
+  /** [min, max] emit cadence in seconds for the continuous stream. */
+  stream_interval_seconds: [number, number]
 }
 
-/** One 90-day uptime segment for a workload. */
+/** Status of a single daily uptime segment (mirrors backend api/workloads.py). */
+export type UptimeStatus = 'up' | 'degraded' | 'down'
+
+/** One daily uptime segment within the 90-day window. */
 export interface UptimeSegment {
   date: string
   uptime_percent: number
-  status: string
+  status: UptimeStatus
+}
+
+/**
+ * Full 90-day uptime history payload.
+ * Mirrors `GET /api/workloads/{id}/uptime` (backend/api/workloads.py), which
+ * returns the segments plus an overall uptime summary — NOT a bare array.
+ */
+export interface WorkloadUptime {
+  workload_id: string
+  segments: UptimeSegment[]
+  overall_uptime_percent: number
+  window_days: number
+  count: number
+}
+
+/**
+ * Envelope payload for the workload telemetry history endpoint.
+ * Mirrors `GET /api/workloads/{id}/telemetry` (backend/api/workloads.py).
+ */
+interface WorkloadTelemetryResponse {
+  workload_id: string
+  telemetry: TelemetrySnapshot[]
+  count: number
 }
 
 /* ------------------------------------------------------------------ *
@@ -112,15 +235,45 @@ export const ingestTelemetry = (snapshot: TelemetrySnapshot) =>
 export const bulkIngestTelemetry = (snapshots: TelemetrySnapshot[]) =>
   post<TelemetrySnapshot[]>('/telemetry/bulk-ingest', snapshots)
 
-export const getWorkloads = () => get<Workload[]>('/workloads')
+/** Envelope payload for the workloads list endpoint (backend api/workloads.py). */
+export interface WorkloadsListResponse {
+  workloads: Workload[]
+  count: number
+}
+
+/**
+ * List all workloads. The backend wraps the list in `{ workloads, count }`;
+ * we unwrap to the array so callers get `Workload[]`.
+ */
+export const getWorkloads = async (): Promise<Workload[]> => {
+  const res = await get<WorkloadsListResponse>('/workloads')
+  return res.workloads
+}
 
 export const getWorkload = (id: string) => get<Workload>(`/workloads/${id}`)
 
-export const getWorkloadTelemetry = (id: string, limit?: number) =>
-  get<TelemetrySnapshot[]>(`/workloads/${id}/telemetry`, limit ? { limit } : undefined)
+/**
+ * Telemetry history for a workload, most recent first. The backend wraps the
+ * list in `{ workload_id, telemetry, count }`; we unwrap to the array so
+ * callers get `TelemetrySnapshot[]`.
+ */
+export const getWorkloadTelemetry = async (
+  id: string,
+  limit?: number,
+): Promise<TelemetrySnapshot[]> => {
+  const res = await get<WorkloadTelemetryResponse>(
+    `/workloads/${id}/telemetry`,
+    limit ? { limit } : undefined,
+  )
+  return res.telemetry
+}
 
+/**
+ * 90-day uptime history for a workload. Returns the full payload (segments plus
+ * `overall_uptime_percent` for the summary strip), matching the backend shape.
+ */
 export const getWorkloadUptime = (id: string) =>
-  get<UptimeSegment[]>(`/workloads/${id}/uptime`)
+  get<WorkloadUptime>(`/workloads/${id}/uptime`)
 
 export const getWorkloadPrediction = (id: string) =>
   get<DowntimePrediction>(`/workloads/${id}/prediction`)
@@ -132,16 +285,32 @@ export const getWorkloadPrediction = (id: string) =>
 export const runDetection = (workloadId?: string) =>
   post<Issue[]>(workloadId ? `/detection/run/${workloadId}` : '/detection/run')
 
+/** Query params accepted by GET /api/issues (mirrors backend api/detection.py). */
 export interface IssueFilters {
+  issue_type?: string
   severity?: string
-  category?: string
-  environment?: string
+  issue_category?: string
   status?: string
-  owner_team?: string
+  workload_id?: string
 }
 
-export const getIssues = (filters?: IssueFilters) =>
-  get<Issue[]>('/issues', filters as Record<string, unknown> | undefined)
+/** Envelope payload for the issues list endpoint. */
+export interface IssuesListResponse {
+  issues: Issue[]
+  count: number
+}
+
+/**
+ * List issues, optionally filtered. The backend wraps the list in
+ * `{ issues, count }`; we unwrap to the array so callers get `Issue[]`.
+ */
+export const getIssues = async (filters?: IssueFilters): Promise<Issue[]> => {
+  const res = await get<IssuesListResponse>(
+    '/issues',
+    filters as Record<string, unknown> | undefined,
+  )
+  return res.issues
+}
 
 export const getIssue = (id: string) => get<Issue>(`/issues/${id}`)
 
@@ -174,16 +343,29 @@ export const executeRemediation = (recommendationId: string) =>
 export const getRemediationReport = (id: string) =>
   get<RemediationResult>(`/remediation/${id}/report`)
 
-export const getApprovals = () => get<Recommendation[]>('/approvals')
+export const getApprovals = async (
+  includeResolved = false,
+): Promise<ApprovalItem[]> => {
+  const res = await get<ApprovalsListResponse>(
+    '/approvals',
+    includeResolved ? { include_resolved: true } : undefined,
+  )
+  return res.approvals
+}
 
-export const approveRecommendation = (id: string, selectedTools?: string[]) =>
-  post<RemediationResult>(`/approvals/${id}/approve`, { selected_tools: selectedTools ?? [] })
+export const approveRecommendation = (id: string, selectedMcpTools?: string[]) =>
+  post<ApprovalItem>(`/approvals/${id}/approve`, {
+    selected_mcp_tools: selectedMcpTools ?? [],
+  })
 
-export const denyApproval = (id: string, reason?: string) =>
-  post<Recommendation>(`/approvals/${id}/deny`, { reason })
+export const denyApproval = (id: string) =>
+  post<ApprovalItem>(`/approvals/${id}/deny`)
 
 export const snoozeApproval = (id: string, minutes?: number) =>
-  post<Recommendation>(`/approvals/${id}/snooze`, { minutes })
+  post<ApprovalItem>(
+    `/approvals/${id}/snooze`,
+    minutes != null ? { minutes } : undefined,
+  )
 
 /* ------------------------------------------------------------------ *
  * 5. Scoring / Alerts / MCP log / Audit                               *
@@ -218,31 +400,45 @@ export const getIssueAuditLogs = (issueId: string) =>
 
 export const getDashboardSummary = () => get<DashboardSummary>('/dashboard/summary')
 
-export const getCompositeHeatmap = () =>
-  get<CompositeHeatmapCell[]>('/dashboard/heatmap/composite')
+/** Composite heatmap: unwrap the `{ cells, count }` envelope to the cells array. */
+export const getCompositeHeatmap = async (): Promise<CompositeHeatmapCell[]> => {
+  const res = await get<CompositeHeatmapResponse>('/dashboard/heatmap/composite')
+  return res.cells
+}
 
-export const getMatrixHeatmap = () =>
-  get<DimensionScores[]>('/dashboard/heatmap/matrix')
+/** Matrix heatmap: unwrap the `{ rows, count }` envelope to the rows array. */
+export const getMatrixHeatmap = async (): Promise<MatrixHeatmapRow[]> => {
+  const res = await get<MatrixHeatmapResponse>('/dashboard/heatmap/matrix')
+  return res.rows
+}
 
 export const getSavingsSummary = () => get<SavingsSummary>('/dashboard/savings')
 
-export const getRecentActions = () => get<RecentAction[]>('/dashboard/recent-actions')
+/** Recent actions: unwrap the `{ actions, count }` envelope to the actions array. */
+export const getRecentActions = async (): Promise<RecentAction[]> => {
+  const res = await get<RecentActionsResponse>('/dashboard/recent-actions')
+  return res.actions
+}
 
 /* ------------------------------------------------------------------ *
  * 7. Mock controller                                                  *
  * ------------------------------------------------------------------ */
 
-export const getMockScenarios = () => get<MockScenario[]>('/mock/scenarios')
+/** List demo scenarios: unwrap the `{ scenarios, count }` envelope to the array. */
+export const getMockScenarios = async (): Promise<MockScenario[]> => {
+  const res = await get<MockScenariosResponse>('/mock/scenarios')
+  return res.scenarios
+}
 
 export const triggerMockScenario = (scenarioId: string) =>
-  post<{ scenario_id: string; triggered: boolean }>(`/mock/trigger/${scenarioId}`)
+  post<MockTriggerResult>(`/mock/trigger/${scenarioId}`)
 
-export const resetMock = () => post<{ reset: boolean }>('/mock/reset')
+export const resetMock = () => post<MockResetResult>('/mock/reset')
 
 export const startMockStream = () =>
-  post<MockStatus>('/mock/stream/start')
+  post<MockStreamStartResult>('/mock/stream/start')
 
-export const stopMockStream = () => post<MockStatus>('/mock/stream/stop')
+export const stopMockStream = () => post<MockStreamStopResult>('/mock/stream/stop')
 
 export const getMockStatus = () => get<MockStatus>('/mock/status')
 

@@ -26,7 +26,7 @@
         "monitoring_enabled": true,
         "cost_per_hour": 1.10,
         "cost_24h": 26.4,
-        "cost_30d_forecast": 792.0,
+        "cost_30d_forecast": 950.0,
         "energy_kwh_24h": 28.0,
         "carbon_kgco2e_24h": 11.2,
         "carbon_intensity_gco2_per_kwh": 400.0,
@@ -171,7 +171,7 @@
       "expected_execution_path": "user_approval_required",
       "telemetry": {
         "workload_id": "wl-costly-vm-001",
-        "cpu_usage_percent": 22.0,
+        "cpu_usage_percent": 12.0,
         "memory_usage_percent": 31.0,
         "storage_gb": 220.0,
         "runtime_hours_24h": 24.0,

@@ -37,15 +37,37 @@ def _deterministic(t: dict) -> dict:
 
 
 def forecast(t: dict) -> dict:
-    """Return forecast_model_result (§8.12)."""
+    """Return forecast_model_result (§8.12).
+
+    Two layers of fallback to the deterministic ``current_24h x 30`` estimate
+    (``model_name == "deterministic_forecast_fallback"``):
+
+    1. Missing/broken artifacts raise inside ``_models()`` / ``predict`` and are
+       caught (§8.13).
+    2. A *defensive non-negative guard*: an XGBoost regressor fed
+       out-of-distribution telemetry (or a cross-version model artifact) can
+       emit negative or non-finite predictions, which are nonsensical for
+       cost/energy/carbon and break optimization-impact arithmetic
+       (savings = before - after must stay >= 0 since factors <= 1). If ANY of
+       the three predictions is negative or non-finite we fall back as a whole
+       so the three values stay mutually consistent.
+    """
     try:
         cost_m, energy_m, carbon_m = _models()
         row = np.array([to_feature_row(t, XGB_FEATURES)], dtype=float)
+        cost = float(cost_m.predict(row)[0])
+        energy = float(energy_m.predict(row)[0])
+        carbon = float(carbon_m.predict(row)[0])
+        preds = (cost, energy, carbon)
+        # Defensive guard: reject negative or non-finite predictions and fall
+        # back to the deterministic estimate to keep forecasts non-negative.
+        if not all(np.isfinite(p) for p in preds) or any(p < 0 for p in preds):
+            return _deterministic(t)
         return {
             "model_name": "XGBoost Regressor",
-            "predicted_cost_30d": round(float(cost_m.predict(row)[0]), 2),
-            "predicted_energy_kwh_30d": round(float(energy_m.predict(row)[0]), 2),
-            "predicted_carbon_kgco2e_30d": round(float(carbon_m.predict(row)[0]), 2),
+            "predicted_cost_30d": round(cost, 2),
+            "predicted_energy_kwh_30d": round(energy, 2),
+            "predicted_carbon_kgco2e_30d": round(carbon, 2),
         }
     except Exception:  # noqa: BLE001 - §8.13 fallback
         return _deterministic(t)

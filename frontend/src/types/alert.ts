@@ -22,4 +22,15 @@ export interface Alert {
   resolved_at: string | null
   resolution_method: string | null
   suppressed_until: string | null
+  // Delivery / suppression metadata (backend tasks 16.2 / 21.1). All optional
+  // and additive so existing alert consumers stay compatible.
+  suppression_count?: number
+  delivery_attempts?: number
+  delivered_at?: string | null
+  delivery_sla_seconds?: number | null
+  first_attempt_at?: string | null
+  last_attempt_at?: string | null
+  sla_breached?: boolean
+  escalated?: boolean
+  escalated_at?: string | null
 }
